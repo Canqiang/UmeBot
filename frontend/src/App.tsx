@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Bot, User, TrendingUp, TrendingDown, DollarSign, Users, Package, ChevronDown, Loader } from 'lucide-react';
+import { ChartView } from './components/ChartView';
 
 // Types
 interface Message {
@@ -65,9 +66,10 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const renderData = () => {
     if (!message.data) return null;
 
-    const { type, content } = message.data;
+    const { type, content, display_type } = message.data;
+    const displayType = display_type || type;
 
-    if (type === 'daily_report') {
+    if (displayType === 'daily_report') {
       const report = content as DailyReport;
       return (
         <div className="mt-4 space-y-4">
@@ -101,7 +103,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
       );
     }
 
-    if (type === 'metrics_cards') {
+    if (displayType === 'metrics_cards') {
       const metrics = content.metrics as Metrics;
       return (
         <div className="mt-4 grid grid-cols-2 gap-4">
@@ -133,7 +135,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
       );
     }
 
-    if (type === 'causal_analysis') {
+    if (displayType === 'causal_analysis') {
       return (
         <div className="mt-4 bg-white border rounded-lg p-4">
           <h4 className="font-semibold mb-3">🎯 因果分析结果</h4>
@@ -146,6 +148,14 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           >
             查看完整分析 →
           </button>
+        </div>
+      );
+    }
+
+    if (displayType === 'chart') {
+      return (
+        <div className="mt-4">
+          <ChartView data={content.chart} />
         </div>
       );
     }
