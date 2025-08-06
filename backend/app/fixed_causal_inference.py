@@ -27,8 +27,8 @@ import holidays
 # 预测模型
 try:
     from prophet import Prophet
-
     HAS_PROPHET = True
+
 except ImportError:
     print("⚠️ Prophet未安装，预测功能将使用简单模型")
     HAS_PROPHET = False

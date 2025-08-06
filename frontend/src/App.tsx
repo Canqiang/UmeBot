@@ -1,157 +1,389 @@
-// frontend/src/App.tsx
-import React, { useEffect, useRef } from 'react';
-import * as echarts from 'echarts';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Bot, User, TrendingUp, TrendingDown, Calendar, DollarSign, Users, Package, ChevronDown, X, Loader, AlertCircle } from 'lucide-react';
 
-const App: React.FC = () => {
-  const chartRef = useRef<HTMLDivElement>(null);
+// Types
+interface Message {
+  id: string;
+  type: 'user' | 'bot';
+  content: string;
+  timestamp: string;
+  data?: any;
+}
 
-  useEffect(() => {
-    if (chartRef.current) {
-      const chart = echarts.init(chartRef.current);
-      chart.setOption({
-        animation: false,
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: {
-          type: 'category',
-          data: ['1月','2月','3月','4月','5月','6月','7月','8月'],
-          axisLine: { lineStyle: { color: '#E5E7EB' } }
-        },
-        yAxis: {
-          type: 'value',
-          axisLine: { lineStyle: { color: '#E5E7EB' } },
-          splitLine: { lineStyle: { color: '#E5E7EB' } }
-        },
-        series: [{
-          data: [820, 932, 901, 934, 1290, 1330, 1320, 1450],
-          type: 'line',
-          smooth: true,
-          itemStyle: { color: '#4CAF50' },
-          areaStyle: {
-            color: {
-              type: 'linear',
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: 'rgba(76,175,80,0.2)' },
-                { offset: 1, color: 'rgba(76,175,80,0)' }
-              ]
-            }
-          }
-        }]
-      });
-    }
-  }, []);
+interface Metrics {
+  total_revenue: number;
+  total_orders: number;
+  unique_customers: number;
+  avg_order_value: number;
+  changes?: {
+    total_revenue?: number;
+    order_count?: number;
+    unique_customers?: number;
+  };
+}
+
+interface DailyReport {
+  date: string;
+  highlights: string[];
+  trends: Record<string, number>;
+  insights: string[];
+}
+
+// WebSocket connection
+let ws: WebSocket | null = null;
+
+// Components
+const MetricCard: React.FC<{
+  title: string;
+  value: string | number;
+  change?: number;
+  icon: React.ReactNode;
+}> = ({ title, value, change, icon }) => {
+  const isPositive = change && change > 0;
 
   return (
-    <div className="flex flex-col h-screen bg-white font-sans">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b bg-white">
-        <div className="flex items-center space-x-4">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <i className="fas fa-robot text-white"></i>
-          </div>
-          <div>
-            <h1 className="text-lg font-medium">UMe Bot</h1>
-            <p className="text-sm text-gray-500">09:00 AM</p>
-          </div>
+    <div className="bg-gray-50 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-gray-600">{title}</span>
+        {icon}
+      </div>
+      <div className="text-2xl font-semibold mb-1">{value}</div>
+      {change !== undefined && (
+        <div className={`flex items-center text-sm ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          {isPositive ? <TrendingUp className="w-4 h-4 mr-1" /> : <TrendingDown className="w-4 h-4 mr-1" />}
+          {Math.abs(change).toFixed(1)}%
         </div>
-        <button className="px-4 py-2 bg-primary text-white rounded-lg">
-          查看详情 <i className="fas fa-arrow-right ml-2"></i>
-        </button>
-      </header>
-
-      {/* Main */}
-      <main className="flex-1 p-6 bg-white overflow-auto">
-        {/* Data Cards */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {/* 卡片示例 */}
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-              <span>总访问量</span>
-              <i
-                className="fas fa-question-circle text-gray-400 cursor-help"
-                title="24小时内访问网站的总人次，包括新访客和老访客"
-              ></i>
-            </div>
-            <div className="text-2xl font-semibold">942,876</div>
-            <div className="text-sm text-green-500 mt-1">↑ 7.15%</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-              <span>活跃用户</span>
-              <i
-                className="fas fa-question-circle text-gray-400 cursor-help"
-                title="当日至少进行过一次有效互动的独立用户数"
-              ></i>
-            </div>
-            <div className="text-2xl font-semibold">2,143</div>
-            <div className="text-sm text-green-500 mt-1">↑ 8.3%</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-              <span>转化率</span>
-              <i
-                className="fas fa-question-circle text-gray-400 cursor-help"
-                title="完成目标行为的用户占总访问用户的百分比，包括注册、购买等"
-              ></i>
-            </div>
-            <div className="text-2xl font-semibold">15.8%</div>
-            <div className="text-sm text-green-500 mt-1">↑ 2.1%</div>
-          </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-              <span>平均停留时间</span>
-              <i
-                className="fas fa-question-circle text-gray-400 cursor-help"
-                title="用户在网站的平均访问时长，反映内容吸引力和用户粘性"
-              ></i>
-            </div>
-            <div className="text-2xl font-semibold">14:30</div>
-            <div className="text-sm text-red-500 mt-1">↓ 1.2%</div>
-          </div>
-        </div>
-
-        {/* Chart */}
-        <div className="bg-white rounded-lg p-4 shadow">
-          <h2 className="text-sm text-gray-600 mb-2">数据趋势</h2>
-          <div ref={chartRef} style={{ width: '100%', height: '300px' }}></div>
-        </div>
-
-        {/* Chat */}
-        <div className="mt-6 bg-gray-50 rounded-lg p-4 shadow">
-          <div className="h-64 overflow-y-auto mb-4 space-y-4">
-            {/* Bot Message */}
-            <div className="flex items-start">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center mr-3">
-                <i className="fas fa-robot text-white"></i>
-              </div>
-              <div className="bg-white rounded-lg p-3 shadow-sm max-w-2xl">
-                <p className="text-gray-800">你好！我是 UMe 数据助手，很高兴为你服务。</p>
-              </div>
-            </div>
-            {/* User Message */}
-            <div className="flex items-start justify-end">
-              <div className="bg-primary bg-opacity-10 rounded-lg p-3 shadow-sm max-w-2xl">
-                <p className="text-gray-800">我想看看今天的数据分析报告</p>
-              </div>
-              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center ml-3">
-                <i className="fas fa-user text-gray-500"></i>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center bg-white rounded-lg border p-2">
-            <input
-              type="text"
-              className="flex-1 px-3 py-2 text-sm border-none focus:outline-none"
-              placeholder="请输入您的问题..."
-            />
-            <button className="px-4 py-2 bg-primary text-white rounded-lg ml-2 whitespace-nowrap">
-              发送 <i className="fas fa-paper-plane ml-1"></i>
-            </button>
-          </div>
-        </div>
-      </main>
+      )}
     </div>
   );
 };
 
-export default App;
+const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
+  const isUser = message.type === 'user';
+  const [showDetails, setShowDetails] = useState(false);
+
+  const renderData = () => {
+    if (!message.data) return null;
+
+    const { type, content } = message.data;
+
+    if (type === 'daily_report') {
+      const report = content as DailyReport;
+      return (
+        <div className="mt-4 space-y-4">
+          <div className="bg-white border rounded-lg p-4">
+            <h4 className="font-semibold mb-3">📊 今日数据概览</h4>
+            <div className="space-y-2">
+              {report.highlights.map((highlight, idx) => (
+                <div key={idx} className="text-sm">{highlight}</div>
+              ))}
+            </div>
+          </div>
+
+          {report.insights && report.insights.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">💡 关键洞察</h4>
+              <ul className="space-y-1">
+                {report.insights.map((insight, idx) => (
+                  <li key={idx} className="text-sm text-blue-800">{insight}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="text-blue-600 text-sm hover:text-blue-700 flex items-center"
+          >
+            查看详细数据 <ChevronDown className={`w-4 h-4 ml-1 transform ${showDetails ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+      );
+    }
+
+    if (type === 'metrics_cards') {
+      const metrics = content.metrics as Metrics;
+      return (
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <MetricCard
+            title="总营收"
+            value={`$${metrics.total_revenue.toLocaleString()}`}
+            change={metrics.changes?.total_revenue}
+            icon={<DollarSign className="w-4 h-4 text-gray-400" />}
+          />
+          <MetricCard
+            title="订单数"
+            value={metrics.total_orders.toLocaleString()}
+            change={metrics.changes?.order_count}
+            icon={<Package className="w-4 h-4 text-gray-400" />}
+          />
+          <MetricCard
+            title="客户数"
+            value={metrics.unique_customers.toLocaleString()}
+            change={metrics.changes?.unique_customers}
+            icon={<Users className="w-4 h-4 text-gray-400" />}
+          />
+          <MetricCard
+            title="客单价"
+            value={`$${metrics.avg_order_value.toFixed(2)}`}
+            change={0}
+            icon={<DollarSign className="w-4 h-4 text-gray-400" />}
+          />
+        </div>
+      );
+    }
+
+    if (type === 'causal_analysis') {
+      return (
+        <div className="mt-4 bg-white border rounded-lg p-4">
+          <h4 className="font-semibold mb-3">🎯 因果分析结果</h4>
+          <div className="space-y-2 text-sm">
+            <p>分析已完成，点击查看详细报告</p>
+          </div>
+          <button
+            onClick={() => setShowDetails(true)}
+            className="mt-3 text-blue-600 text-sm hover:text-blue-700"
+          >
+            查看完整分析 →
+          </button>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <div className={`message-container flex ${isUser ? 'justify-end' : 'justify-start'} mb-6`}>
+      <div className={`flex items-start max-w-[70%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+        <div className={`flex-shrink-0 w-10 h-10 rounded flex items-center justify-center ${
+          isUser ? 'bg-blue-100 ml-3' : 'bg-gray-100 mr-3'
+        }`}>
+          {isUser ? <User className="w-5 h-5 text-blue-600" /> : <Bot className="w-5 h-5 text-gray-600" />}
+        </div>
+
+        <div>
+          <div className={`rounded-lg px-4 py-3 ${
+            isUser 
+              ? 'bg-blue-50 text-blue-900 rounded-tr-none' 
+              : 'bg-white border border-gray-200 rounded-tl-none'
+          }`}>
+            <p className="whitespace-pre-wrap">{message.content}</p>
+            {renderData()}
+          </div>
+          <div className={`text-xs text-gray-500 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
+            {new Date(message.timestamp).toLocaleTimeString('zh-CN', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main App Component
+export default function App() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // WebSocket connection
+  useEffect(() => {
+    const connectWebSocket = () => {
+      ws = new WebSocket(`ws://localhost:8000/ws/chat/${sessionId}`);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setIsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'bot_message') {
+          const newMessage: Message = {
+            id: `msg_${Date.now()}`,
+            type: 'bot',
+            content: data.message,
+            timestamp: data.timestamp,
+            data: data.data
+          };
+          setMessages(prev => [...prev, newMessage]);
+          setIsLoading(false);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setIsConnected(false);
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        setIsConnected(false);
+        // Reconnect after 3 seconds
+        setTimeout(connectWebSocket, 3000);
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [sessionId]);
+
+  const sendMessage = useCallback(() => {
+    if (!inputValue.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+    const userMessage: Message = {
+      id: `msg_${Date.now()}`,
+      type: 'user',
+      content: inputValue,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    ws.send(JSON.stringify({
+      type: 'chat',
+      message: inputValue
+    }));
+
+    setInputValue('');
+    inputRef.current?.focus();
+  }, [inputValue]);
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  // Quick actions
+  const quickActions = [
+    { label: '📊 查看日报', query: '我想看看今天的数据分析报告' },
+    { label: '📈 销售预测', query: '预测未来7天的销售趋势' },
+    { label: '🎯 因果分析', query: '分析最近促销活动的效果' },
+    { label: '💡 业务建议', query: '基于数据给我一些业务建议' }
+  ];
+
+  const handleQuickAction = (query: string) => {
+    setInputValue(query);
+    setTimeout(() => {
+      sendMessage();
+    }, 100);
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 shadow-lg">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center space-x-3">
+            <Bot className="w-8 h-8" />
+            <div>
+              <h1 className="text-xl font-semibold">UMe Bot</h1>
+              <p className="text-sm text-blue-100">智能数据助手</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full ${
+              isConnected ? 'bg-green-500' : 'bg-red-500'
+            } bg-opacity-20`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isConnected ? 'bg-green-400' : 'bg-red-400'
+              }`} />
+              <span className="text-sm">{isConnected ? '已连接' : '连接中...'}</span>
+            </div>
+            <span className="text-sm">
+              {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Quick Actions */}
+      {messages.length === 0 && (
+        <div className="bg-white border-b px-6 py-4">
+          <div className="max-w-4xl mx-auto">
+            <p className="text-sm text-gray-600 mb-3">快速开始：</p>
+            <div className="flex flex-wrap gap-2">
+              {quickActions.map((action, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleQuickAction(action.query)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="max-w-4xl mx-auto">
+          {messages.map(message => (
+            <MessageBubble key={message.id} message={message} />
+          ))}
+
+          {isLoading && (
+            <div className="flex items-center space-x-2 text-gray-500 mb-4">
+              <Loader className="w-4 h-4 animate-spin" />
+              <span className="text-sm">正在分析...</span>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="bg-white border-t px-6 py-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center space-x-4">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="请输入您的问题..."
+              className="flex-1 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={!isConnected}
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!isConnected || !inputValue.trim()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
+            >
+              <span>发送</span>
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

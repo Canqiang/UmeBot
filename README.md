@@ -1,127 +1,187 @@
+## 📁 项目结构总览
 
-## 系统架构设计
-
-### 1. **后端API服务** (Python FastAPI + LLM)### 2. **前端应用** (React + TypeScript)### 3. **环境配置文件**## 🎯 完整的前后端分离架构设计
-
-我已经为您创建了一个完整的前后端分离架构，集成了LLM功能。以下是系统概览：
-
-### 系统架构
-
-```mermaid
-graph TB
-    subgraph "前端 (React + TypeScript)"
-        A[React App] --> B[聊天界面]
-        A --> C[数据可视化]
-        A --> D[ECharts图表]
-    end
-    
-    subgraph "后端 (FastAPI + Python)"
-        E[FastAPI Server] --> F[数据分析引擎]
-        E --> G[LLM集成]
-        E --> H[WebSocket]
-    end
-    
-    subgraph "数据层"
-        I[ClickHouse DB]
-        J[OpenAI API]
-    end
-    
-    A -.->|HTTP/WebSocket| E
-    F --> I
-    G --> J
+```
+ume-bot/
+├── backend/                    # 后端服务
+│   ├── app/
+│   │   ├── main.py            # FastAPI主应用（WebSocket + REST API）
+│   │   ├── chat_manager.py    # 聊天会话管理（对话历史、上下文）
+│   │   ├── llm_service.py     # LLM服务（意图识别、响应生成）
+│   │   ├── analysis_service.py # 数据分析服务（因果分析、预测）
+│   │   ├── database.py        # 数据库连接管理
+│   │   ├── fixed_causal_inference.py       
+│   │   ├── config.py          # 配置管理
+│   │   └── models.py          # 数据模型定义
+│   ├── requirements.txt       # Python依赖
+│   ├── run.py                 # 启动脚本
+│   ├── test_connection.py     # 测试脚本
+│   └── .env                   # 环境变量
+│
+├── frontend/                   # 前端应用
+│   ├── src/
+│   │   ├── App.tsx            # 主聊天界面组件
+│   │   ├── components/        # UI组件
+│   │   │   ├── DetailModal.tsx
+│   │   │   ├── ChartView.tsx
+│   │   │   └── TableView.tsx
+│   │   ├── services/          # API和WebSocket服务
+│   │   │   ├── api.ts
+│   │   │   └── websocket.ts
+│   │   ├── hooks/             # 自定义React Hooks
+│   │   │   ├── useWebSocket.ts
+│   │   │   ├── useChat.ts
+│   │   │   └── useAnalysis.ts
+│   │   ├── types/             # TypeScript类型定义
+│   │   │   └── index.ts
+│   │   └── utils/             # 工具函数
+│   │       ├── format.ts
+│   │       ├── chartHelpers.ts
+│   │       └── dataProcessor.ts
+│   ├── package.json           # Node依赖
+│   └── vite.config.ts         # Vite配置
+│
+├── docker-compose.yml         # Docker部署配置
+├── start.sh                   # Linux/Mac启动脚本
+├── start.bat                  # Windows启动脚本
+└── README.md                  # 项目文档
 ```
 
-### 核心功能
+## 🚀 快速启动指南
 
-1. **智能对话系统**
-   - 集成OpenAI GPT模型
-   - 理解自然语言查询
-   - 基于数据上下文生成回答
+### 方式1: 使用启动脚本（推荐）
 
-2. **实时数据分析**
-   - 连接ClickHouse数据库
-   - 因果推断分析
-   - 销售预测功能
-
-3. **可视化展示**
-   - 数据指标卡片
-   - 趋势图表
-   - 交互式分析报告
-
-4. **响应式UI设计**
-   - 采用您提供的绿色主题
-   - Tailwind CSS样式
-   - 优雅的聊天界面
-
-### 快速开始
-
-1. **克隆项目并安装依赖**
+**Linux/Mac:**
 ```bash
-# 安装后端依赖
+chmod +x start.sh
+./start.sh
+```
+
+**Windows:**
+```batch
+start.bat
+```
+
+### 方式2: 手动启动
+
+**后端:**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# 安装前端依赖
-cd frontend && npm install
+python run.py
 ```
 
-2. **配置环境变量**
+**前端:**
 ```bash
-cp .env.example .env
-# 编辑.env文件，填入OpenAI API密钥等配置
+cd frontend
+npm install
+npm run dev
 ```
 
-3. **启动服务**
+### 方式3: Docker Compose
 ```bash
-# 方式一：使用快速启动脚本
-chmod +x quickstart.sh
-./quickstart.sh
-
-# 方式二：使用Docker
-docker-compose up
-
-# 方式三：手动启动
-# 后端: uvicorn backend_api:app --reload
-# 前端: cd frontend && npm start
+docker-compose up -d
 ```
 
-### API接口示例
+## 🌟 核心功能
 
-1. **聊天接口**
-```javascript
-POST /api/chat
-{
-  "message": "我想看看今天的数据分析报告"
-}
+### 1. **智能对话系统**
+- ✅ 基于GPT-3.5的自然语言理解
+- ✅ 多轮对话上下文管理
+- ✅ 意图识别和实体提取
+- ✅ WebSocket实时通信
+
+### 2. **数据分析展示**
+- ✅ 实时数据概览卡片
+- ✅ 交互式图表（ECharts）
+- ✅ 可排序/筛选的数据表格
+- ✅ 详情弹窗查看
+
+### 3. **因果分析**
+- ✅ 促销效果分析
+- ✅ 天气影响分析
+- ✅ 节假日效应分析
+- ✅ 交互效应和异质性分析
+
+### 4. **销售预测**
+- ✅ 7-15天销售预测
+- ✅ 置信区间展示
+- ✅ Prophet/多项式回归模型
+
+### 5. **智能推荐**
+- ✅ 基于分析结果的行动建议
+- ✅ 优先级排序
+- ✅ 预期效果评估
+
+## 💬 使用示例
+
+### 基础查询
+- "我想看看今天的数据分析报告"
+- "显示本周的销售趋势"
+- "昨天的营收是多少？"
+
+### 因果分析
+- "分析最近促销活动的效果"
+- "天气对销售有什么影响？"
+- "周末效应有多大？"
+
+### 预测查询
+- "预测未来7天的销售额"
+- "下周的销售趋势如何？"
+- "需要准备多少库存？"
+
+### 业务建议
+- "如何提升销售额？"
+- "给我一些营销建议"
+- "哪些产品需要重点关注？"
+
+## 🔧 配置说明
+
+### 环境变量（.env）
+```env
+# OpenAI配置
+OPENAI_API_KEY=your-api-key
+OPENAI_BASE_URL=https://api.openai-proxy.org/v1
+OPENAI_MODEL=gpt-3.5-turbo
+
+# ClickHouse配置
+CLICKHOUSE_HOST=clickhouse-0-0.umetea.net
+CLICKHOUSE_PORT=443
+CLICKHOUSE_DB=dw
+CLICKHOUSE_USER=ml_ume
+CLICKHOUSE_PASSWORD=your-password
 ```
 
-2. **获取指标**
-```javascript
-GET /api/metrics?start_date=2025-06-01&end_date=2025-07-31
-```
+## 📊 数据流程
 
-3. **WebSocket实时通信**
-```javascript
-const ws = new WebSocket('ws://localhost:8000/ws/chat');
-ws.send(JSON.stringify({
-  type: 'chat',
-  message: '分析最近的销售趋势'
-}));
-```
+1. **用户输入** → WebSocket → 后端
+2. **意图识别** → LLM解析用户意图
+3. **数据获取** → 根据意图查询ClickHouse
+4. **分析处理** → 因果分析/预测/聚合
+5. **响应生成** → LLM生成自然语言回复
+6. **结果展示** → 前端渲染图表/表格
 
-### 扩展功能
+## 🎯 技术亮点
 
-系统预留了以下扩展接口：
-- 库存管理数据集成
-- 客流量分析
-- 供应链数据接入
-- 实时预警系统
+- **前后端分离架构**：React + FastAPI
+- **实时通信**：WebSocket双向通信
+- **智能交互**：GPT驱动的自然语言理解
+- **专业分析**：EconML因果推断 + Prophet预测
+- **响应式设计**：TailwindCSS + 移动端适配
+- **类型安全**：TypeScript全栈类型定义
+- **容器化部署**：Docker Compose一键部署
 
-### 部署建议
+## 📝 注意事项
 
-1. **开发环境**：使用提供的快速启动脚本
-2. **测试环境**：使用Docker Compose
-3. **生产环境**：
-   - 使用Nginx反向代理
-   - 配置SSL证书
-   - 实施Redis缓存
-   - 使用环境变量管理敏感信息
+1. 确保ClickHouse数据库连接正常
+2. OpenAI API密钥需要有效
+3. Python 3.10+ 和 Node.js 18+ 环境
+4. 首次运行会自动安装依赖
+5. 默认端口：前端3000，后端8000
+
+## 🔗 访问地址
+
+- **前端界面**: http://localhost:3000
+- **后端API**: http://localhost:8000
+- **API文档**: http://localhost:8000/docs
