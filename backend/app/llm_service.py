@@ -299,23 +299,36 @@ class LLMService:
             "content": {}
         }
 
-        # 根据数据类型决定展示方式
+        # 添加所有可用内容
         if "metrics" in data:
             formatted["content"]["metrics"] = data["metrics"]
-            formatted["display_type"] = "metrics_cards"
+
+        if "forecast" in data:
+            formatted["content"]["chart"] = data["forecast"]["chart_data"]
+            formatted["display_type"] = "chart"
 
         if "chart_data" in data:
             formatted["content"]["chart"] = data["chart_data"]
-            formatted["display_type"] = "chart"
 
         if "table_data" in data:
             formatted["content"]["table"] = data["table_data"]
-            formatted["display_type"] = "table"
 
         if "analysis" in data:
             formatted["content"]["analysis"] = data["analysis"]
-            if "causal" in str(data.get("analysis_type", "")):
-                formatted["display_type"] = "causal_analysis"
+
+        # 按优先级确定展示类型，确保稳定
+        type_priority = ["analysis", "chart_data", "table_data", "metrics"]
+        type_map = {
+            "analysis": lambda: "causal_analysis" if "causal" in str(data.get("analysis_type", "")) else "analysis",
+            "chart_data": lambda: "chart",
+            "table_data": lambda: "table",
+            "metrics": lambda: "metrics_cards",
+        }
+
+        for key in type_priority:
+            if key in data:
+                formatted["display_type"] = type_map[key]()
+                break
 
         return formatted
 

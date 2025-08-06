@@ -100,6 +100,7 @@ export interface ForecastData {
   confidence_upper?: number[];
   method?: string;
   summary?: ForecastSummary;
+  chart_data?: ChartData;
 }
 
 export interface ForecastSummary {

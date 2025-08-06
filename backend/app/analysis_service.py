@@ -61,6 +61,28 @@ class AnalysisService:
             "time": datetime.now()
         }
 
+    def _format_forecast(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        """格式化预测结果以便序列化"""
+        forecast_df = result.get("forecast")
+        if isinstance(forecast_df, pd.DataFrame):
+            forecast_data = {
+                "dates": forecast_df["ds"].dt.strftime("%Y-%m-%d").tolist(),
+                "values": forecast_df["yhat"].tolist(),
+            }
+            if "yhat_lower" in forecast_df.columns:
+                forecast_data["confidence_lower"] = forecast_df["yhat_lower"].tolist()
+            if "yhat_upper" in forecast_df.columns:
+                forecast_data["confidence_upper"] = forecast_df["yhat_upper"].tolist()
+        else:
+            forecast_data = {}
+
+        if "summary" in result:
+            forecast_data["summary"] = result["summary"]
+        if "method" in result:
+            forecast_data["method"] = result["method"]
+
+        return forecast_data
+
     async def get_daily_report(self, start_date: str, end_date: str) -> Dict[str, Any]:
         """获取日报数据"""
         cache_key = self._get_cache_key("daily_report", {"start": start_date, "end": end_date})
@@ -156,13 +178,20 @@ class AnalysisService:
             )
 
             # 格式化结果
+            forecast_data = None
+            forecast_results = results.get("forecast_results")
+            if forecast_results:
+                if isinstance(forecast_results, dict) and "error" not in forecast_results:
+                    forecast_data = self._format_forecast(forecast_results)
+                else:
+                    forecast_data = forecast_results
             analysis = {
                 "period": {"start": start_date, "end": end_date},
                 "causal_effects": self._format_causal_effects(results.get("analysis_results", {})),
                 "interactions": self._format_interactions(results.get("analysis_results", {}).get("interactions", {})),
                 "heterogeneity": self._format_heterogeneity(
                     results.get("analysis_results", {}).get("heterogeneity", {})),
-                "forecast": results.get("forecast_results", {}),
+                "forecast": forecast_data,
                 "recommendations": self._generate_recommendations(results)
             }
 
@@ -239,6 +268,7 @@ class AnalysisService:
                 "chart_data": chart_data,
                 "method": forecast_result.get("method")
             }
+
 
             self._save_to_cache(cache_key, result)
             return result
