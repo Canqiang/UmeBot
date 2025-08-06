@@ -217,10 +217,31 @@ class AnalysisService:
                 days
             )
 
-            if "error" not in forecast_result:
-                self._save_to_cache(cache_key, forecast_result)
+            # 预测失败则直接返回错误
+            if "error" in forecast_result:
+                return forecast_result
 
-            return forecast_result
+            # 转换预测结果为图表数据
+            forecast_df = forecast_result.get("forecast")
+            chart_data = []
+            if isinstance(forecast_df, pd.DataFrame):
+                chart_data = [
+                    {
+                        "date": row["ds"].strftime("%Y-%m-%d"),
+                        "actual": float(row["y"]) if not pd.isna(row["y"]) else None,
+                        "predicted": float(row["yhat"])
+                    }
+                    for _, row in forecast_df.iterrows()
+                ]
+
+            result = {
+                "forecast": forecast_result.get("summary", {}),
+                "chart_data": chart_data,
+                "method": forecast_result.get("method")
+            }
+
+            self._save_to_cache(cache_key, result)
+            return result
 
         except Exception as e:
             print(f"Error getting forecast: {e}")
