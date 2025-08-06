@@ -58,17 +58,28 @@ class DatabaseManager:
     async def get_sales_summary(self, start_date: str, end_date: str) -> Dict[str, Any]:
         """获取销售摘要"""
         query = f"""
+        WITH first_purchase AS (
+            SELECT
+                customer_id,
+                toDate(MIN(created_at_pt)) AS first_purchase_date
+            FROM dw.fact_order_item_variations
+            WHERE pay_status = 'COMPLETED'
+            GROUP BY customer_id
+        )
         SELECT
-            toDate(created_at_pt) AS date,
-            COUNT(DISTINCT order_id) AS order_count,
-            SUM(item_total_amt) AS total_revenue,
-            COUNT(DISTINCT customer_id) AS unique_customers,
-            AVG(item_total_amt) AS avg_order_value
-        FROM dw.fact_order_item_variations
+            toDate(f.created_at_pt) AS date,
+            COUNT(DISTINCT f.order_id) AS order_count,
+            SUM(f.item_total_amt) AS total_revenue,
+            COUNT(DISTINCT f.customer_id) AS unique_customers,
+            COUNT(DISTINCT f.item_name) AS item_count,
+            COUNT(DISTINCT IF(fp.first_purchase_date = toDate(f.created_at_pt), f.customer_id, NULL)) AS new_users,
+            AVG(f.item_total_amt) AS avg_order_value
+        FROM dw.fact_order_item_variations f
+        LEFT JOIN first_purchase fp ON f.customer_id = fp.customer_id
         WHERE
-            created_at_pt >= '{start_date}'
-            AND created_at_pt <= '{end_date}'
-            AND pay_status = 'COMPLETED'
+            f.created_at_pt >= '{start_date}'
+            AND f.created_at_pt <= '{end_date}'
+            AND f.pay_status = 'COMPLETED'
         GROUP BY date
         ORDER BY date
         """
@@ -82,6 +93,8 @@ class DatabaseManager:
             'total_revenue': float(df['total_revenue'].sum()),
             'total_orders': int(df['order_count'].sum()),
             'unique_customers': int(df['unique_customers'].sum()),
+            'item_count': int(df['item_count'].sum()),
+            'new_users': int(df['new_users'].sum()),
             'avg_order_value': float(df['avg_order_value'].mean()),
             'daily_data': df.to_dict('records')
         }

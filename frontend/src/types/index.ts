@@ -26,6 +26,8 @@ export interface Metrics {
   total_revenue: number;
   total_orders: number;
   unique_customers: number;
+  item_count: number;
+  new_users: number;
   avg_order_value: number;
   conversion_rate?: number;
   changes?: MetricChanges;
