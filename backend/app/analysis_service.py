@@ -369,8 +369,35 @@ class AnalysisService:
         if len(data) < 2:
             return {}
 
-        # 按日期排序
-        data = data.sort_values('date')
+        # 确保存在日期列并标准化为"date"
+        date_col = None
+        for col in ["date", "order_date", "ds"]:
+            if col in data.columns:
+                date_col = col
+                break
+
+        if date_col is None:
+            if isinstance(data.index, pd.DatetimeIndex):
+                idx_name = data.index.name or "index"
+                data = data.reset_index().rename(columns={idx_name: "date"})
+            elif not pd.api.types.is_numeric_dtype(data.index):
+                try:
+                    data = data.copy()
+                    data["date"] = pd.to_datetime(data.index)
+                except Exception:
+                    return {}
+            else:
+                return {}
+        else:
+            if date_col != "date":
+                data = data.rename(columns={date_col: "date"})
+
+        try:
+            data["date"] = pd.to_datetime(data["date"])
+        except Exception:
+            return {}
+
+        data = data.sort_values("date")
 
         # 计算最近两个时期的对比
         mid_point = len(data) // 2
