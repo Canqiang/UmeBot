@@ -2,7 +2,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 // API配置
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
 // 创建axios实例
 const apiClient: AxiosInstance = axios.create({

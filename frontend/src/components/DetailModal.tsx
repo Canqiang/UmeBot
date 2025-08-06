@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Download, Filter, Search, ChevronLeft, ChevronRight, BarChart3, LineChart, PieChart, TrendingUp, Info } from 'lucide-react';
-import * as echarts from 'echarts';
+import React from 'react';
+import { X } from 'lucide-react';
+import { TableView } from './TableView';
+import { ChartView } from './ChartView';
+import { AnalysisView } from './AnalysisView';
 
 interface DetailModalProps {
   isOpen: boolean;

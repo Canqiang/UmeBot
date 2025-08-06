@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Download, Filter, Search, ChevronLeft, ChevronRight, BarChart3, LineChart, PieChart, TrendingUp, Info } from 'lucide-react';
-import * as echarts from 'echarts';
+import React from 'react';
+import { TrendingUp, Info } from 'lucide-react';
 
 // ============== AnalysisView Component ==============
 interface AnalysisViewProps {
@@ -90,24 +89,4 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ data }) => {
       )}
     </div>
   );
-};
-
-// Helper Functions
-const formatCellValue = (value: any, type?: string): string => {
-  if (value === null || value === undefined) return '-';
-
-  switch (type) {
-    case 'currency':
-      return `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    case 'percentage':
-      return `${(Number(value) * 100).toFixed(2)}%`;
-    case 'number':
-      return Number(value).toLocaleString();
-    case 'date':
-      return new Date(value).toLocaleDateString('zh-CN');
-    case 'datetime':
-      return new Date(value).toLocaleString('zh-CN');
-    default:
-      return String(value);
-  }
 };

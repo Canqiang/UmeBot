@@ -1,8 +1,7 @@
 // ============== src/hooks/useChat.ts ==============
 import { useState, useCallback, useEffect } from 'react';
-import { Message, WebSocketMessage } from '../types';
+import { Message } from '../types';
 import { useWebSocket } from './useWebSocket';
-import { api } from '../services/api';
 
 interface UseChatOptions {
   sessionId: string;
@@ -27,7 +26,6 @@ export const useChat = ({ sessionId, initialMessages = [] }: UseChatOptions): Us
 
   const { isConnected, send, lastMessage, error } = useWebSocket({
     url: wsUrl,
-    sessionId,
     autoConnect: true,
   });
 

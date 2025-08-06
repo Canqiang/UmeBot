@@ -11,14 +11,14 @@ export const dataProcessor = {
       return acc;
     }, {} as Record<string, number[]>);
 
-    return Object.entries(grouped).map(([key, values]) => {
+    return (Object.entries(grouped) as [string, number[]][]).map(([key, values]) => {
       let result = 0;
       switch (method) {
         case 'sum':
-          result = values.reduce((a, b) => a + b, 0);
+          result = values.reduce((a: number, b: number) => a + b, 0);
           break;
         case 'avg':
-          result = values.reduce((a, b) => a + b, 0) / values.length;
+          result = values.reduce((a: number, b: number) => a + b, 0) / values.length;
           break;
         case 'count':
           result = values.length;
