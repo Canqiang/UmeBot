@@ -45,3 +45,13 @@ def test_calculate_trends_with_index_dates():
     service = AnalysisService()
     trends = service._calculate_trends(df)
     assert trends["total_revenue"] == 133.33
+
+
+def test_mock_daily_report_includes_optional_metrics():
+    service = AnalysisService()
+    report = service._get_mock_daily_report()
+    metrics = report["metrics"]
+    assert "item_count" in metrics
+    assert metrics["item_count"] == 0
+    assert "new_users" in metrics
+    assert metrics["new_users"] == 0

@@ -573,6 +573,8 @@ class AnalysisService:
                 "total_revenue": 25000.0,
                 "total_orders": 500,
                 "unique_customers": 350,
+                "item_count": 0,
+                "new_users": 0,
                 "avg_order_value": 50.0,
                 "promotion_orders": 100,
                 "loyalty_orders": 150
