@@ -35,7 +35,7 @@ export const useMetrics = ({
       if (reportResult.data) {
         setDailyReport(reportResult.data as DailyReport);
 
-        // Extract metrics from daily report
+        // Extract metrics from daily report including item count and new users
         if (reportResult.data.metrics) {
           setMetrics(reportResult.data.metrics as Metrics);
         }

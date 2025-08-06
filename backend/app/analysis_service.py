@@ -113,6 +113,8 @@ class AnalysisService:
                     "total_revenue": float(enhanced_data['total_revenue'].sum()),
                     "total_orders": int(enhanced_data['order_count'].sum()),
                     "unique_customers": int(enhanced_data['unique_customers'].sum()),
+                    "item_count": int(enhanced_data['item_count'].sum()) if 'item_count' in enhanced_data else 0,
+                    "new_users": int(enhanced_data['new_users'].sum()) if 'new_users' in enhanced_data else 0,
                     "avg_order_value": float(enhanced_data['avg_order_value'].mean()),
                     "promotion_orders": int(enhanced_data['discount_orders'].sum()),
                     "loyalty_orders": int(enhanced_data['loyalty_orders'].sum())

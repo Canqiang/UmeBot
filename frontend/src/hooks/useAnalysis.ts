@@ -29,7 +29,7 @@ export const useAnalysis = (): UseAnalysisReturn => {
         analysis_type: type,
       });
 
-      return result.data as AnalysisResult;
+      return result as AnalysisResult;
     } catch (err) {
       setError(err as Error);
       return null;
@@ -44,7 +44,7 @@ export const useAnalysis = (): UseAnalysisReturn => {
 
     try {
       const result = await api.getForecast(days);
-      return result.data as ForecastData;
+      return result as ForecastData;
     } catch (err) {
       setError(err as Error);
       return null;
