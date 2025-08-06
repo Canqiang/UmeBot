@@ -17,8 +17,8 @@ interface Metrics {
   total_revenue: number;
   total_orders: number;
   unique_customers: number;
-  item_count: number;
-  new_users: number;
+  item_count?: number;
+  new_users?: number;
   avg_order_value: number;
   changes?: {
     total_revenue?: number;
@@ -113,37 +113,37 @@ const MessageBubble: React.FC<{ message: Message; onChartPointClick?: (params: a
         <div className="mt-4 grid grid-cols-3 gap-4">
           <MetricCard
             title="总营收"
-            value={`$${metrics.total_revenue.toLocaleString()}`}
+            value={`$${(metrics.total_revenue ?? 0).toLocaleString()}`}
             change={metrics.changes?.total_revenue}
             icon={<DollarSign className="w-4 h-4 text-gray-400" />}
           />
           <MetricCard
             title="订单数"
-            value={metrics.total_orders.toLocaleString()}
+            value={(metrics.total_orders ?? 0).toLocaleString()}
             change={metrics.changes?.order_count}
             icon={<Package className="w-4 h-4 text-gray-400" />}
           />
           <MetricCard
             title="客户数"
-            value={metrics.unique_customers.toLocaleString()}
+            value={(metrics.unique_customers ?? 0).toLocaleString()}
             change={metrics.changes?.unique_customers}
             icon={<Users className="w-4 h-4 text-gray-400" />}
           />
           <MetricCard
             title="商品数"
-            value={metrics.item_count.toLocaleString()}
+            value={(metrics.item_count ?? 0).toLocaleString()}
             change={0}
             icon={<ShoppingBag className="w-4 h-4 text-gray-400" />}
           />
           <MetricCard
             title="新用户"
-            value={metrics.new_users.toLocaleString()}
+            value={(metrics.new_users ?? 0).toLocaleString()}
             change={0}
             icon={<UserPlus className="w-4 h-4 text-gray-400" />}
           />
           <MetricCard
             title="客单价"
-            value={`$${metrics.avg_order_value.toFixed(2)}`}
+            value={`$${(metrics.avg_order_value ?? 0).toFixed(2)}`}
             change={0}
             icon={<DollarSign className="w-4 h-4 text-gray-400" />}
           />
