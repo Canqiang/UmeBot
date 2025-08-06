@@ -5,10 +5,7 @@ import { WebSocketMessage } from '../types';
 
 interface UseWebSocketOptions {
   url: string;
-  sessionId: string;
   autoConnect?: boolean;
-  reconnectDelay?: number;
-  maxReconnectAttempts?: number;
 }
 
 interface UseWebSocketReturn {
@@ -23,10 +20,7 @@ interface UseWebSocketReturn {
 
 export const useWebSocket = ({
   url,
-  sessionId,
   autoConnect = true,
-  reconnectDelay = 3000,
-  maxReconnectAttempts = 5,
 }: UseWebSocketOptions): UseWebSocketReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -45,7 +39,7 @@ export const useWebSocket = ({
 
     try {
       if (!wsRef.current) {
-        wsRef.current = new WebSocketService(sessionId);
+        wsRef.current = new WebSocketService();
       }
 
       await wsRef.current.connect(url);
@@ -71,7 +65,7 @@ export const useWebSocket = ({
       setError(err as Error);
       setIsConnecting(false);
     }
-  }, [url, sessionId]);
+    }, [url]);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {

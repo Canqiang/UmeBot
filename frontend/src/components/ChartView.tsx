@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Download, Filter, Search, ChevronLeft, ChevronRight, BarChart3, LineChart, PieChart, TrendingUp, Info } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { BarChart3 } from 'lucide-react';
 import * as echarts from 'echarts';
 
 interface ChartViewProps {
@@ -15,12 +15,10 @@ interface ChartViewProps {
 
 export const ChartView: React.FC<ChartViewProps> = ({ data }) => {
   const chartRef = React.useRef<HTMLDivElement>(null);
-  const [chartInstance, setChartInstance] = useState<echarts.ECharts | null>(null);
 
   useEffect(() => {
     if (chartRef.current) {
       const chart = echarts.init(chartRef.current);
-      setChartInstance(chart);
 
       const option = buildChartOption(data);
       chart.setOption(option);

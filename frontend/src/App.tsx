@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, TrendingUp, TrendingDown, Calendar, DollarSign, Users, Package, ChevronDown, X, Loader, AlertCircle } from 'lucide-react';
+import { Send, Bot, User, TrendingUp, TrendingDown, DollarSign, Users, Package, ChevronDown, Loader } from 'lucide-react';
 
 // Types
 interface Message {
