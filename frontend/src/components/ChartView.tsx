@@ -11,9 +11,10 @@ interface ChartViewProps {
     yAxis?: any;
     options?: any;
   };
+  onPointClick?: (params: any) => void;
 }
 
-export const ChartView: React.FC<ChartViewProps> = ({ data }) => {
+export const ChartView: React.FC<ChartViewProps> = ({ data, onPointClick }) => {
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,14 +25,22 @@ export const ChartView: React.FC<ChartViewProps> = ({ data }) => {
       chart.setOption(option);
 
       const handleResize = () => chart.resize();
+      const handleClick = (params: any) => {
+        if (onPointClick) {
+          onPointClick(params);
+        }
+      };
+
       window.addEventListener('resize', handleResize);
+      chart.on('click', handleClick);
 
       return () => {
         window.removeEventListener('resize', handleResize);
+        chart.off('click', handleClick);
         chart.dispose();
       };
     }
-  }, [data]);
+  }, [data, onPointClick]);
 
   const buildChartOption = (data: ChartViewProps['data']) => {
     const baseOption = {

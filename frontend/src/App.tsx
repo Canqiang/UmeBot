@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Bot, User, TrendingUp, TrendingDown, DollarSign, Users, Package, ShoppingBag, UserPlus, ChevronDown, Loader } from 'lucide-react';
 import { ChartView } from './components/ChartView';
-import { ForecastChart } from './components/ForecastChart';
+import { DetailModal } from './components/DetailModal';
+
 
 // Types
 interface Message {
@@ -62,7 +63,7 @@ const MetricCard: React.FC<{
   );
 };
 
-const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
+const MessageBubble: React.FC<{ message: Message; onChartPointClick?: (params: any) => void }> = ({ message, onChartPointClick }) => {
   const isUser = message.type === 'user';
   const [showDetails, setShowDetails] = useState(false);
 
@@ -187,7 +188,9 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
       const chart = content.chart || content;
       return (
         <div className="mt-4">
-          <ForecastChart data={chart} />
+
+          <ChartView data={content.chart} onPointClick={onChartPointClick} />
+
         </div>
       );
     }
@@ -232,6 +235,7 @@ export default function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [detailModal, setDetailModal] = useState<{ title: string; data: any; type: 'table' | 'chart' | 'analysis' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -320,6 +324,27 @@ export default function App() {
     }
   };
 
+  const handleChartPointClick = (params: any) => {
+    setDetailModal({
+      title: `${params.seriesName ?? ''}${params.name ? ' - ' + params.name : ''}`,
+      data: {
+        columns: [
+          { key: 'series', title: 'Series' },
+          { key: 'category', title: 'Category' },
+          { key: 'value', title: 'Value', type: 'number' }
+        ],
+        rows: [
+          {
+            series: params.seriesName,
+            category: params.name,
+            value: Array.isArray(params.value) ? params.value[1] ?? params.value[0] : params.value
+          }
+        ]
+      },
+      type: 'table'
+    });
+  };
+
   // Quick actions
   const quickActions = [
     { label: '📊 查看日报', query: '我想看看今天的数据分析报告' },
@@ -387,7 +412,7 @@ export default function App() {
       <div className="flex-1 overflow-y-auto px-6 py-6">
         <div className="max-w-4xl mx-auto">
           {messages.map(message => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble key={message.id} message={message} onChartPointClick={handleChartPointClick} />
           ))}
 
           {isLoading && (
@@ -426,6 +451,15 @@ export default function App() {
           </div>
         </div>
       </div>
+      {detailModal && (
+        <DetailModal
+          isOpen={true}
+          onClose={() => setDetailModal(null)}
+          title={detailModal.title}
+          data={detailModal.data}
+          type={detailModal.type}
+        />
+      )}
     </div>
   );
 }
