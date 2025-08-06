@@ -296,6 +296,10 @@ class LLMService:
         if "metrics" in data:
             formatted["content"]["metrics"] = data["metrics"]
 
+        if "forecast" in data:
+            formatted["content"]["chart"] = data["forecast"]["chart_data"]
+            formatted["display_type"] = "chart"
+
         if "chart_data" in data:
             formatted["content"]["chart"] = data["chart_data"]
 

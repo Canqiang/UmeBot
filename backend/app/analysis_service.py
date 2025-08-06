@@ -246,6 +246,25 @@ class AnalysisService:
                 days
             )
 
+            # 将预测结果转换为前端可用的格式
+            forecast_df = forecast_result.get("forecast")
+            if isinstance(forecast_df, pd.DataFrame):
+                # 转换日期和预测值
+                dates = forecast_df["ds"].dt.strftime("%Y-%m-%d").tolist()
+                values = forecast_df["yhat"].round(2).tolist()
+
+                chart_data = {
+                    "type": "line",
+                    "xAxis": {"data": dates},
+                    "series": [{"name": "预测值", "data": values}]
+                }
+
+                forecast_result["forecast"] = {
+                    "dates": dates,
+                    "values": values,
+                    "chart_data": chart_data
+                }
+
             if "error" not in forecast_result:
                 formatted = self._format_forecast(forecast_result)
                 self._save_to_cache(cache_key, formatted)
