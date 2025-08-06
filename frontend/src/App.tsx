@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Bot, User, TrendingUp, TrendingDown, DollarSign, Users, Package, ChevronDown, Loader } from 'lucide-react';
+import { Send, Bot, User, TrendingUp, TrendingDown, DollarSign, Users, Package, ShoppingBag, UserPlus, ChevronDown, Loader } from 'lucide-react';
 import { ChartView } from './components/ChartView';
 
 // Types
@@ -15,6 +15,8 @@ interface Metrics {
   total_revenue: number;
   total_orders: number;
   unique_customers: number;
+  item_count: number;
+  new_users: number;
   avg_order_value: number;
   changes?: {
     total_revenue?: number;
@@ -106,7 +108,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
     if (displayType === 'metrics_cards') {
       const metrics = content.metrics as Metrics;
       return (
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-3 gap-4">
           <MetricCard
             title="总营收"
             value={`$${metrics.total_revenue.toLocaleString()}`}
@@ -124,6 +126,18 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
             value={metrics.unique_customers.toLocaleString()}
             change={metrics.changes?.unique_customers}
             icon={<Users className="w-4 h-4 text-gray-400" />}
+          />
+          <MetricCard
+            title="商品数"
+            value={metrics.item_count.toLocaleString()}
+            change={0}
+            icon={<ShoppingBag className="w-4 h-4 text-gray-400" />}
+          />
+          <MetricCard
+            title="新用户"
+            value={metrics.new_users.toLocaleString()}
+            change={0}
+            icon={<UserPlus className="w-4 h-4 text-gray-400" />}
           />
           <MetricCard
             title="客单价"
