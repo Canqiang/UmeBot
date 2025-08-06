@@ -102,7 +102,13 @@ export interface ForecastData {
   confidence_upper?: number[];
   method?: string;
   summary?: ForecastSummary;
-  chart_data?: ChartData;
+  chart_data?: Array<{
+    date: string;
+    actual: number | null;
+    predicted: number;
+    confidence_lower?: number;
+    confidence_upper?: number;
+  }>;
 }
 
 export interface ForecastSummary {

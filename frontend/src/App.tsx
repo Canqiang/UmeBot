@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Bot, User, TrendingUp, TrendingDown, DollarSign, Users, Package, ShoppingBag, UserPlus, ChevronDown, Loader } from 'lucide-react';
 import { ChartView } from './components/ChartView';
+import { ForecastChart } from './components/ForecastChart';
 
 // Types
 interface Message {
@@ -167,9 +168,26 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
     }
 
     if (displayType === 'chart') {
+      const chart = content.chart;
+      if (Array.isArray(chart)) {
+        return (
+          <div className="mt-4">
+            <ForecastChart data={chart} />
+          </div>
+        );
+      }
       return (
         <div className="mt-4">
-          <ChartView data={content.chart} />
+          <ChartView data={chart} />
+        </div>
+      );
+    }
+
+    if (displayType === 'forecast') {
+      const chart = content.chart || content;
+      return (
+        <div className="mt-4">
+          <ForecastChart data={chart} />
         </div>
       );
     }
