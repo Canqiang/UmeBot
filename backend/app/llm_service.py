@@ -280,8 +280,15 @@ class LLMService:
         if "forecast" in data:
             formatted.append("\n📈 预测数据：")
             forecast = data["forecast"]
-            formatted.append(f"- 未来7天总预测: ${forecast.get('total_forecast', 0):,.0f}")
-            formatted.append(f"- 日均预测: ${forecast.get('avg_daily_forecast', 0):,.0f}")
+            formatted.append(
+                f"- 未来{forecast.get('forecast_days', 0)}天总预测: ${forecast.get('total_forecast', 0):,.0f}"
+            )
+            formatted.append(
+                f"- 日均预测: ${forecast.get('avg_daily_forecast', 0):,.0f}"
+            )
+            method = data.get("method")
+            if method:
+                formatted.append(f"- 预测方法: {method}")
 
         return "\n".join(formatted)
 
