@@ -233,6 +233,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [detailModal, setDetailModal] = useState<{ title: string; data: any; type: 'table' | 'chart' | 'analysis' } | null>(null);
@@ -250,11 +251,19 @@ export default function App() {
   // WebSocket connection
   useEffect(() => {
     const connectWebSocket = () => {
-      ws = new WebSocket(`ws://localhost:8000/ws/chat/${sessionId}`);
+      const baseUrl = import.meta.env.VITE_API_WS_URL;
+      if (!baseUrl) {
+        console.error('VITE_API_WS_URL is not set');
+        setConnectionError('WebSocket URL not configured');
+        return;
+      }
+
+      ws = new WebSocket(`${baseUrl}/ws/chat/${sessionId}`);
 
       ws.onopen = () => {
         console.log('WebSocket connected');
         setIsConnected(true);
+        setConnectionError(null);
       };
 
       ws.onmessage = (event) => {
@@ -276,11 +285,13 @@ export default function App() {
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
         setIsConnected(false);
+        setConnectionError('WebSocket connection failed. Retrying...');
       };
 
       ws.onclose = () => {
         console.log('WebSocket disconnected');
         setIsConnected(false);
+        setConnectionError('WebSocket disconnected. Reconnecting...');
         // Reconnect after 3 seconds
         setTimeout(connectWebSocket, 3000);
       };
@@ -379,7 +390,9 @@ export default function App() {
               <div className={`w-2 h-2 rounded-full ${
                 isConnected ? 'bg-green-400' : 'bg-red-400'
               }`} />
-              <span className="text-sm">{isConnected ? '已连接' : '连接中...'}</span>
+              <span className="text-sm">
+                {isConnected ? '已连接' : connectionError ? '连接失败' : '连接中...'}
+              </span>
             </div>
             <span className="text-sm">
               {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
@@ -387,6 +400,12 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {connectionError && (
+        <div className="bg-red-100 text-red-700 text-center py-2">
+          {connectionError}
+        </div>
+      )}
 
       {/* Quick Actions */}
       {messages.length === 0 && (
