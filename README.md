@@ -151,21 +151,6 @@ docker-compose up -d
 | `CLICKHOUSE_USER` | ClickHouse 用户名 |
 | `CLICKHOUSE_PASSWORD` | ClickHouse 用户密码 |
 
-### 环境变量（.env）
-```env
-# OpenAI配置
-OPENAI_API_KEY=your-api-key
-OPENAI_BASE_URL=https://api.openai-proxy.org/v1
-OPENAI_MODEL=gpt-3.5-turbo
-
-# ClickHouse配置
-CLICKHOUSE_HOST=clickhouse-0-0.umetea.net
-CLICKHOUSE_PORT=443
-CLICKHOUSE_DB=dw
-CLICKHOUSE_USER=ml_ume
-CLICKHOUSE_PASSWORD=your-password
-```
-
 ### 数据导入与连接验证
 
 1. **将数据集导入 ClickHouse**
