@@ -216,6 +216,8 @@ class LLMService:
         # 添加历史上下文
         if context:
             for msg in context[-5:]:  # 最多5条历史
+                if msg['role'] not in {"system", "assistant", "user", "function", "tool", "developer"}:
+                    msg['role'] = "assistant"
                 messages.append({
                     "role": msg["role"],
                     "content": msg["content"]
