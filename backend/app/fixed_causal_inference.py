@@ -1048,6 +1048,21 @@ class UMeCausalInferenceEngine:
         # 1. 数据加载
         sales_df = self.load_integrated_data(start_date, end_date)
 
+        # 某些情况下点击屋返回的数据可能缺少州信息，
+        # 后续天气特征和汇总统计都依赖 state 列。为避免
+        # KeyError，这里进行兼容性处理：如果缺少 state 列，
+        # 尝试从门店名称中解析州代码，若仍失败则使用默认值。
+        if 'state' not in sales_df.columns:
+            if 'location_name' in sales_df.columns:
+                sales_df['state'] = (
+                    sales_df['location_name']
+                    .astype(str)
+                    .str.extract(r'-([A-Z]{2})$')[0]
+                    .fillna('CA')
+                )
+            else:
+                sales_df['state'] = 'CA'
+
         # 2. 加载额外数据
         customer_df = self.load_customer_profile_data(start_date, end_date)
         promotion_df = self.load_promotion_sales_data(start_date, end_date)
