@@ -71,6 +71,15 @@ class CausalEffect(BaseModel):
     sample_size: int
 
 
+class ForecastSummary(BaseModel):
+    """预测摘要"""
+    total_forecast: float
+    avg_daily_forecast: float
+    max_daily_forecast: float
+    min_daily_forecast: float
+    forecast_days: int
+
+
 class ForecastData(BaseModel):
     """预测数据"""
     dates: List[str]
@@ -78,6 +87,7 @@ class ForecastData(BaseModel):
     confidence_lower: Optional[List[float]] = None
     confidence_upper: Optional[List[float]] = None
     method: str = "Prophet"
+    summary: Optional[ForecastSummary] = None
 
 
 class DetailRequest(BaseModel):
