@@ -89,20 +89,20 @@ class DatabaseManager:
     async def get_customer_segments(self) -> List[Dict[str, Any]]:
         """获取客户细分"""
         query = """
-                SELECT CASE \
-                           WHEN high_value_customer = 1 THEN 'High Value' \
-                           WHEN loyal = 1 THEN 'Loyal' \
-                           WHEN potential = 1 THEN 'Potential' \
-                           WHEN churned = 1 THEN 'Churned' \
-                           ELSE 'Regular' \
-                           END                    AS segment, \
-                       COUNT(*)                   AS customer_count, \
-                       AVG(order_final_total_amt) AS avg_lifetime_value, \
-                       AVG(order_final_total_cnt) AS avg_order_count
-                FROM ads.customer_profile
-                GROUP BY segment
-                ORDER BY customer_count DESC \
-                """
+        SELECT CASE
+                   WHEN high_value_customer = 1 THEN 'High Value'
+                   WHEN loyal = 1 THEN 'Loyal'
+                   WHEN potential = 1 THEN 'Potential'
+                   WHEN churned = 1 THEN 'Churned'
+                   ELSE 'Regular'
+               END AS segment,
+               COUNT(*) AS customer_count,
+               AVG(order_final_total_amt) AS avg_lifetime_value,
+               AVG(order_final_total_cnt) AS avg_order_count
+        FROM ads.customer_profile
+        GROUP BY segment
+        ORDER BY customer_count DESC
+        """
 
         df = await self.execute_query_async(query)
         return df.to_dict('records')
