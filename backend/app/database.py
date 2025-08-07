@@ -145,33 +145,22 @@ class ClickHouseDB:
             FROM dw.fact_order_item_variations
             WHERE pay_status = 'COMPLETED'
             GROUP BY customer_id
-        ),
-        daily_metrics AS (
-            SELECT
-                toDate(f.created_at_pt) AS date,
-                COUNT(DISTINCT f.order_id) AS order_count,
-                SUM(f.item_total_amt) AS total_revenue,
-                COUNT(DISTINCT f.customer_id) AS unique_customers,
-                COUNT(DISTINCT f.item_name) AS item_count,
-                COUNT(DISTINCT IF(fp.first_purchase_date = toDate(f.created_at_pt), f.customer_id, NULL)) AS new_users,
-                AVG(f.item_total_amt) AS avg_order_value
-            FROM dw.fact_order_item_variations f
-            LEFT JOIN first_purchase fp ON f.customer_id = fp.customer_id
-            WHERE
-                f.created_at_pt >= '{start_date}'
-                AND f.created_at_pt <= '{end_date}'
-                AND f.pay_status = 'COMPLETED'
-            GROUP BY date
         )
         SELECT
-            COUNT(DISTINCT order_count) as days_with_orders,
-            SUM(total_revenue) as total_revenue,
-            SUM(order_count) as total_orders,
-            SUM(unique_customers) as total_customers,
-            SUM(item_count) as total_items,
-            SUM(new_users) as total_new_users,
-            AVG(avg_order_value) as avg_order_value
-        FROM daily_metrics
+            toDate(f.created_at_pt) AS date,
+            SUM(f.item_total_amt) AS total_revenue,
+            COUNT(DISTINCT f.order_id) AS total_orders,
+            COUNT(DISTINCT f.customer_id) AS total_customers,
+            COUNT(DISTINCT f.item_name) AS total_items,
+            COUNT(DISTINCT IF(fp.first_purchase_date = toDate(f.created_at_pt), f.customer_id, NULL)) AS total_new_users,
+            SUM(f.item_total_amt) / NULLIF(COUNT(DISTINCT f.order_id), 0) AS avg_order_value
+        FROM dw.fact_order_item_variations f
+        LEFT JOIN first_purchase fp ON f.customer_id = fp.customer_id
+        WHERE
+            f.created_at_pt >= '{start_date}' and f.created_at_pt <= '{end_date}'
+            AND f.pay_status = 'COMPLETED'
+        GROUP BY date
+        ORDER BY date
         """
 
         df = await self.execute_query_async(query)

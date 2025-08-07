@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import re
 import logging
 
-from openai import OpenAI
+from openai import AzureOpenAI
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -20,9 +20,10 @@ class LLMService:
     """LLM服务管理"""
     
     def __init__(self):
-        self.client = OpenAI(
+        self.client = AzureOpenAI(
             api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL
+            azure_endpoint=settings.OPENAI_BASE_URL,
+            api_version=settings.OPENAI_API_VERSION
         )
         self.model = settings.OPENAI_MODEL
     
