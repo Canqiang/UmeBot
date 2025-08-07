@@ -248,6 +248,9 @@ const MessageBubble: React.FC<{
     // 预测展示
     if (displayType === 'forecast') {
       const forecastData = content.chart_data || content.chart || content;
+      const handleForecastRender =
+        typeof scrollToBottom === "function" ? () => scrollToBottom() : undefined;
+
       return (
         <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <div className="mb-4">
@@ -274,7 +277,7 @@ const MessageBubble: React.FC<{
             )}
           </div>
           <div className="min-h-[500px]">
-            <ForecastChart data={forecastData} onRender={() => scrollToBottom?.()} />
+            <ForecastChart data={forecastData} onRender={handleForecastRender} />
           </div>
         </div>
       );
