@@ -39,7 +39,32 @@ class LLMService:
             api_version=settings.OPENAI_API_VERSION
         )
         self.model = settings.OPENAI_MODEL
-    
+
+    async def _parse_intent_with_llm(self, query: str) -> Optional[Dict[str, Any]]:
+        """使用LLM解析意图"""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "你是意图识别助手。"
+                            "请从用户问题中提取intent_type、entities和confidence，"
+                            "并返回JSON格式，例如{\"intent_type\": \"data_query\","
+                            " \"entities\": {\"query_target\": \"orders\"}, \"confidence\": 0.9}"
+                        ),
+                    },
+                    {"role": "user", "content": query},
+                ],
+                response_format={"type": "json_object"},
+            )
+            content = response.choices[0].message.content
+            return json.loads(content)
+        except Exception as e:
+            logger.warning("LLM intent parsing failed: %s", e)
+            return None
+
     async def parse_query_intent(self, query: str) -> Dict[str, Any]:
         """解析用户查询意图（增强版）"""
         query_lower = query.lower()
@@ -65,8 +90,23 @@ class LLMService:
             "intent_type": "general",
             "needs_data": False,
             "entities": {},
-            "time_range": None
+            "time_range": None,
+            "confidence": 0.0,
         }
+
+        llm_intent = await self._parse_intent_with_llm(query)
+        if llm_intent:
+            intent["confidence"] = llm_intent.get("confidence", 0.0)
+            if llm_intent.get("confidence", 0.0) >= 0.7 and llm_intent.get("intent_type"):
+                intent.update(llm_intent)
+                intent["needs_data"] = llm_intent["intent_type"] in {
+                    "forecast",
+                    "data_query",
+                    "analysis",
+                    "daily_report",
+                }
+                logger.info("LLM识别意图: %s", intent)
+                return intent
         
         # 1. 检测预测意图
         if any(keyword in query_lower for keyword in forecast_keywords):
@@ -162,15 +202,18 @@ class LLMService:
         
         # 根据意图类型生成不同的响应
         if intent["intent_type"] == "forecast":
-            return await self._generate_forecast_response(data)
+            response = await self._generate_forecast_response(data)
         elif intent["intent_type"] == "data_query":
-            return await self._generate_general_response(user_message,data, None)
+            response = await self._generate_general_response(user_message, data, None)
         elif intent["intent_type"] == "analysis":
-            return await self._generate_analysis_response(data)
+            response = await self._generate_analysis_response(data)
         elif intent["intent_type"] == "daily_report":
-            return await self._generate_report_response(data)
+            response = await self._generate_report_response(data)
         else:
-            return await self._generate_general_response(user_message, data, history)
+            response = await self._generate_general_response(user_message, data, history)
+
+        response["intent"] = intent
+        return response
 
 
     async def _generate_forecast_response(self, data: Dict[str, Any]) -> Dict[str, Any]:
