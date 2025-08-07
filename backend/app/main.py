@@ -6,6 +6,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.websockets import WebSocketState
 from pydantic import BaseModel
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
@@ -224,7 +225,10 @@ async def websocket_endpoint(
                     "message": "消息格式错误",
                     "timestamp": datetime.now().isoformat()
                 }
-                await websocket.send_json(error_message)
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    await websocket.send_json(error_message)
+            except WebSocketDisconnect:
+                break
             except Exception as e:
                 logger.error(f"Error processing message from {session_id}: {e}")
                 error_message = {
@@ -232,7 +236,8 @@ async def websocket_endpoint(
                     "message": f"处理消息时出错：{str(e)}",
                     "timestamp": datetime.now().isoformat()
                 }
-                await websocket.send_json(error_message)
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    await websocket.send_json(error_message)
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket disconnected: {session_id}")
