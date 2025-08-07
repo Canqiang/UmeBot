@@ -22,11 +22,11 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
   };
 
   return (
-    <ReactMarkdown
-      className={`markdown-body ${className}`}
-      remarkPlugins={[remarkGfm, remarkMath]}
-      rehypePlugins={[rehypeKatex, rehypeHighlight]}
-      components={{
+    <div className={`markdown-body ${className}`}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex, rehypeHighlight]}
+        components={{
         // 标题样式
         h1: ({ children }) => (
           <h1 className="text-2xl font-bold mt-6 mb-4 text-gray-900">{children}</h1>
@@ -169,6 +169,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
     >
       {content}
     </ReactMarkdown>
+    </div>
   );
 };
 
