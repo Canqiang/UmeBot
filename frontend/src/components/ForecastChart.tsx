@@ -16,9 +16,10 @@ interface ForecastPoint {
 interface ForecastChartProps {
   data?: ForecastPoint[] | any;
   onPointClick?: (params: any) => void;
+  onRender?: () => void;
 }
 
-export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick }) => {
+export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick, onRender }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartInstance, setChartInstance] = useState<echarts.ECharts | null>(null);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -46,7 +47,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick
     if (chartInstance && data) {
       updateChart();
     }
-  }, [chartInstance, data, showConfidence, dateRange]);
+  }, [chartInstance, data, showConfidence, dateRange, onRender]);
 
   const updateChart = () => {
     if (!chartInstance || !data) return;
@@ -331,13 +332,21 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick
 
     chartInstance.setOption(option);
 
+    // 触发渲染完成回调
+    chartInstance.off('finished');
+    chartInstance.on('finished', () => {
+      if (onRender) {
+        onRender();
+      }
+    });
+
     // 添加点击事件
     chartInstance.off('click');
     chartInstance.on('click', (params: any) => {
       if (onPointClick) {
         onPointClick(params);
       }
-      
+
       // 更新悬停的数据点
       const index = dates.indexOf(params.name);
       if (index >= 0) {
