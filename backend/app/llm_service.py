@@ -3,12 +3,9 @@
 LLM服务 - 修复意图识别，支持预测和数据查询
 """
 
-import os
 import json
 from decimal import Decimal
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-import re
 import logging
 
 from openai import AzureOpenAI
@@ -43,18 +40,18 @@ class LLMService:
     async def _parse_intent_with_llm(self, query: str) -> Optional[Dict[str, Any]]:
         """使用LLM解析意图"""
         try:
+            system_prompt = (
+                "你是意图识别助手。"
+                "请从用户问题中提取意图, 并从以下intent_type中选择其一: "
+                "forecast, data_query, analysis, daily_report, general。"
+                "根据需要返回entities字段, 并提供confidence。"
+                "返回JSON格式, 例如{\"intent_type\": \"data_query\", "
+                "\"entities\": {\"query_target\": \"orders\"}, \"confidence\": 0.9}"
+            )
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "你是意图识别助手。"
-                            "请从用户问题中提取intent_type、entities和confidence，"
-                            "并返回JSON格式，例如{\"intent_type\": \"data_query\","
-                            " \"entities\": {\"query_target\": \"orders\"}, \"confidence\": 0.9}"
-                        ),
-                    },
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": query},
                 ],
                 response_format={"type": "json_object"},
@@ -67,24 +64,6 @@ class LLMService:
 
     async def parse_query_intent(self, query: str) -> Dict[str, Any]:
         """解析用户查询意图（增强版）"""
-        query_lower = query.lower()
-        
-        # 预测相关关键词
-        forecast_keywords = ['预测', '预估', '预计', '未来', '明天', '下周', '接下来', 
-                           'forecast', 'predict', 'estimate', 'future', 'tomorrow']
-        
-        # 查询相关关键词
-        query_keywords = ['查询', '查', '多少', '几个', '统计', '总共', '目前', '现在','最','昨天',
-                         'query', 'how many', 'count', 'total', 'current', 'now']
-        
-        # 分析相关关键词
-        analysis_keywords = ['分析', '因果', '影响', '效果', '趋势', '对比','下降','上升',
-                           'analyze', 'analysis', 'effect', 'trend', 'compare']
-        
-        # 日报相关关键词
-        report_keywords = ['日报', '报告', '报表', '概览', '总结', '数据',
-                          'report', 'summary', 'overview', 'dashboard']
-        
         intent = {
             "query": query,
             "intent_type": "general",
@@ -97,98 +76,17 @@ class LLMService:
         llm_intent = await self._parse_intent_with_llm(query)
         if llm_intent:
             intent["confidence"] = llm_intent.get("confidence", 0.0)
-            if llm_intent.get("confidence", 0.0) >= 0.7 and llm_intent.get("intent_type"):
+            intent_type = llm_intent.get("intent_type")
+            if intent_type and llm_intent.get("confidence", 0.0) >= 0.7:
                 intent.update(llm_intent)
-                intent["needs_data"] = llm_intent["intent_type"] in {
+                intent["needs_data"] = intent_type in {
                     "forecast",
                     "data_query",
                     "analysis",
                     "daily_report",
                 }
-                logger.info("LLM识别意图: %s", intent)
-                return intent
-        
-        # 1. 检测预测意图
-        if any(keyword in query_lower for keyword in forecast_keywords):
-            intent["intent_type"] = "forecast"
-            intent["needs_data"] = True
-            
-            # 提取预测天数
-            days_match = re.search(r'(\d+)[天日]|未来(\d+)', query)
-            if days_match:
-                days = int(days_match.group(1) or days_match.group(2))
-                intent["forecast_days"] = days
-            else:
-                intent["forecast_days"] = 7  # 默认7天
-            
-            intent["entities"]["forecast_type"] = "sales"
-            logger.info(f"识别为预测意图: {intent['forecast_days']}天")
-            return intent
-        
-        # 2. 检测数据查询意图
-        if any(keyword in query_lower for keyword in query_keywords):
-            intent["intent_type"] = "data_query"
-            intent["needs_data"] = True
-            
-            # 识别查询目标
-            if '用户' in query or '客户' in query or 'customer' in query_lower:
-                intent["entities"]["query_target"] = "customers"
-                intent["entities"]["metric"] = "total_count"
-            elif '订单' in query or 'order' in query_lower:
-                intent["entities"]["query_target"] = "orders"
-                intent["entities"]["metric"] = "total_count"
-            elif '销售' in query or '营收' in query or 'revenue' in query_lower:
-                intent["entities"]["query_target"] = "revenue"
-                intent["entities"]["metric"] = "total_amount"
-            elif '产品' in query or '商品' in query or 'product' in query_lower:
-                intent["entities"]["query_target"] = "products"
-                intent["entities"]["metric"] = "total_count"
-            
-            # 时间范围
-            if '今天' in query or 'today' in query_lower:
-                intent["time_range"] = {"type": "today"}
-            elif '昨天' in query or 'yesterday' in query_lower:
-                intent["time_range"] = {"type": "yesterday"}
-            elif '本周' in query or 'this week' in query_lower:
-                intent["time_range"] = {"type": "this_week"}
-            elif '本月' in query or 'this month' in query_lower:
-                intent["time_range"] = {"type": "this_month"}
-            else:
-                # 默认查询所有时间
-                intent["time_range"] = {"type": "all_time"}
-            
-            logger.info(f"识别为数据查询意图: {intent['entities']}")
-            return intent
-        
-        # 3. 检测分析意图
-        if any(keyword in query_lower for keyword in analysis_keywords):
-            intent["intent_type"] = "analysis"
-            intent["needs_data"] = True
-            
-            if '因果' in query or 'causal' in query_lower:
-                intent["entities"]["analysis_type"] = "causal"
-            elif '趋势' in query or 'trend' in query_lower:
-                intent["entities"]["analysis_type"] = "trend"
-            else:
-                intent["entities"]["analysis_type"] = "general"
-            
-            logger.info(f"识别为分析意图: {intent['entities']}")
-            return intent
-        
-        # 4. 检测日报意图
-        if any(keyword in query_lower for keyword in report_keywords):
-            intent["intent_type"] = "daily_report"
-            intent["needs_data"] = True
-            logger.info("识别为日报意图")
-            return intent
-        
-        # 5. 默认：尝试理解查询
-        if '销售' in query or '销量' in query:
-            intent["intent_type"] = "metrics"
-            intent["needs_data"] = True
-            intent["entities"]["focus"] = "sales"
-        
-        logger.info(f"意图识别结果: {intent}")
+
+        logger.info("意图识别结果: %s", intent)
         return intent
     
     async def generate_response(self, 

@@ -40,6 +40,7 @@ def test_llm_intent_parsing_high_confidence(monkeypatch):
     assert intent["intent_type"] == "data_query"
     assert intent["entities"]["query_target"] == "orders"
     assert intent["confidence"] == 0.9
+    assert intent["needs_data"] is True
 
 
 def test_llm_intent_parsing_low_confidence_fallback(monkeypatch):
@@ -50,9 +51,9 @@ def test_llm_intent_parsing_low_confidence_fallback(monkeypatch):
 
     monkeypatch.setattr(service, "_parse_intent_with_llm", mock_llm)
     intent = asyncio.run(service.parse_query_intent("预测明天的销量"))
-    assert intent["intent_type"] == "forecast"
+    assert intent["intent_type"] == "general"
     assert intent["confidence"] == 0.2
-    assert intent["entities"]["forecast_type"] == "sales"
+    assert intent["needs_data"] is False
 
 
 def test_generate_response_includes_intent(monkeypatch):
