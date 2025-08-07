@@ -1,8 +1,9 @@
 // ============== src/services/api.ts ==============
 import axios, { AxiosInstance } from 'axios';
+import type { ForecastData } from '../types';
 
 // API配置
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
 // 创建axios实例
 const apiClient: AxiosInstance = axios.create({
@@ -74,7 +75,7 @@ export const api = {
   },
 
   // 获取预测
-  getForecast: async (days: number = 7) => {
+  getForecast: async (days: number = 7): Promise<ForecastData> => {
     return apiClient.get(`/api/forecast/${days}`);
   },
 

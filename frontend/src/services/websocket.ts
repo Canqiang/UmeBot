@@ -5,12 +5,9 @@ export class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000;
   private listeners: Map<string, Set<Function>> = new Map();
-  private sessionId: string;
   private isConnecting = false;
 
-  constructor(sessionId: string) {
-    this.sessionId = sessionId;
-  }
+  constructor() {}
 
   connect(url: string): Promise<void> {
     return new Promise((resolve, reject) => {

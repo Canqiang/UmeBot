@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     OPENAI_BASE_URL: str = ""
     OPENAI_MODEL: str = ""
+    OPENAI_API_VERSION: str = ""
 
     # ClickHouse 配置
     CLICKHOUSE_HOST: str

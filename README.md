@@ -138,20 +138,35 @@ docker-compose up -d
 
 ## 🔧 配置说明
 
-### 环境变量（.env）
-```env
-# OpenAI配置
-OPENAI_API_KEY=your-api-key
-OPENAI_BASE_URL=https://api.openai-proxy.org/v1
-OPENAI_MODEL=gpt-3.5-turbo
+### 必需环境变量
 
-# ClickHouse配置
-CLICKHOUSE_HOST=clickhouse-0-0.umetea.net
-CLICKHOUSE_PORT=443
-CLICKHOUSE_DB=dw
-CLICKHOUSE_USER=ml_ume
-CLICKHOUSE_PASSWORD=your-password
-```
+| 变量名 | 说明 |
+| ------ | ---- |
+| `OPENAI_API_KEY` | 用于访问 OpenAI 接口的密钥 |
+| `OPENAI_BASE_URL` | 可选，自定义 OpenAI API 地址 |
+| `OPENAI_MODEL` | 使用的 LLM 模型名称 |
+| `CLICKHOUSE_HOST` | ClickHouse 服务器地址 |
+| `CLICKHOUSE_PORT` | ClickHouse 端口号 |
+| `CLICKHOUSE_DB` | 目标数据库名称 |
+| `CLICKHOUSE_USER` | ClickHouse 用户名 |
+| `CLICKHOUSE_PASSWORD` | ClickHouse 用户密码 |
+
+### 数据导入与连接验证
+
+1. **将数据集导入 ClickHouse**
+   - 在目标数据库中创建表结构。
+   - 使用 `clickhouse-client` 或其它工具导入 CSV 数据：
+     ```bash
+     clickhouse-client --host $CLICKHOUSE_HOST --port $CLICKHOUSE_PORT \
+       --user $CLICKHOUSE_USER --password $CLICKHOUSE_PASSWORD \
+       --query="INSERT INTO <database>.<table> FORMAT CSVWithNames" < your_data.csv
+     ```
+2. **验证连接**
+   - 设置好环境变量后运行：
+     ```bash
+     python backend/test_connection.py
+     ```
+   - 若输出 `Database connection successful` 则表示连接正常。
 
 ## 📊 数据流程
 
