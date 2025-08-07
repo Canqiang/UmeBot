@@ -42,8 +42,7 @@ interface DailyReport {
   metrics?: Metrics;
 }
 
-// WebSocket connection
-let ws: WebSocket | null = null;
+// WebSocket connection will be managed within the App component
 
 // 快速操作按钮
 const quickActions = [
@@ -352,6 +351,8 @@ export default function App() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const hasConnected = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -366,49 +367,53 @@ export default function App() {
     const wsUrl = `ws://localhost:8000/ws/${sessionId}`;
 
     try {
-      ws = new WebSocket(wsUrl);
+      const socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
 
-      ws.onopen = () => {
+      socket.onopen = () => {
         console.log('WebSocket connected');
         setIsConnected(true);
         setConnectionError(null);
       };
 
-      ws.onmessage = (event) => {
+      socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         handleWebSocketMessage(data);
       };
 
-      ws.onerror = (error) => {
+      socket.onerror = (error) => {
         console.error('WebSocket error:', error);
         setConnectionError('连接出错，请刷新页面重试');
       };
 
-      ws.onclose = () => {
+      socket.onclose = () => {
         console.log('WebSocket disconnected');
         setIsConnected(false);
-        // 自动重连
-        setTimeout(() => {
-          if (!isConnected) {
+        if (hasConnected.current) {
+          setTimeout(() => {
             connectWebSocket();
-          }
-        }, 3000);
+          }, 3000);
+        }
       };
     } catch (error) {
       console.error('Failed to connect:', error);
       setConnectionError('无法连接到服务器');
     }
-  }, [sessionId, isConnected]);
+  }, [sessionId]);
 
   useEffect(() => {
-    connectWebSocket();
+    if (!hasConnected.current) {
+      connectWebSocket();
+      hasConnected.current = true;
+    }
 
     return () => {
-      if (ws) {
-        ws.close();
+      hasConnected.current = false;
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.close();
       }
     };
-  }, []);
+  }, [connectWebSocket]);
 
   const handleWebSocketMessage = (data: any) => {
     if (data.type === 'bot_message') {
@@ -431,7 +436,7 @@ export default function App() {
   };
 
   const sendMessage = () => {
-    if (!inputValue.trim() || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!inputValue.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
     const userMessage: Message = {
       id: `user_${Date.now()}`,
@@ -443,7 +448,7 @@ export default function App() {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
-    ws.send(JSON.stringify({
+    wsRef.current.send(JSON.stringify({
       type: 'chat',
       message: inputValue
     }));
@@ -461,8 +466,8 @@ export default function App() {
   const handleChartPointClick = (params: any) => {
     console.log('Chart point clicked:', params);
     // 可以发送请求获取该数据点的详细信息
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
         type: 'get_details',
         detail_type: 'data_point',
         params: {
@@ -476,8 +481,8 @@ export default function App() {
   const handleMetricClick = (metric: string) => {
     console.log('Metric clicked:', metric);
     // 可以发送请求获取该指标的详细信息
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
         type: 'get_details',
         detail_type: 'metric_detail',
         params: {
