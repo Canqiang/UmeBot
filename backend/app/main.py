@@ -87,109 +87,14 @@ app.add_middleware(
 )
 
 
-# API路由
-@app.get("/")
-async def root():
-    """健康检查"""
-    return {
-        "status": "running",
-        "service": "UMe Bot API",
-        "timestamp": datetime.now().isoformat(),
-        "websocket_endpoint": "/ws/{session_id}"
-    }
-
-
-@app.get("/api/health")
-async def health_check():
-    """健康检查接口"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat()
-    }
-
-
-@app.get("/api/daily-report")
-async def get_daily_report():
-    """获取日报数据"""
-    try:
-        today = datetime.now().strftime('%Y-%m-%d')
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-
-        report = await analysis_service.get_daily_report(yesterday, today)
-
-        return JSONResponse(content=report)
-    except Exception as e:
-        logger.error(f"Error getting daily report: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/analyze")
-async def analyze(request: AnalysisRequest):
-    """运行分析"""
-    try:
-        result = await analysis_service.run_analysis(
-            request.start_date,
-            request.end_date,
-            request.analysis_type
-        )
-        return JSONResponse(content=result)
-    except Exception as e:
-        logger.error(f"Error running analysis: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/query")
-async def query_data(query: DataQuery):
-    """查询数据"""
-    try:
-        intent = await llm_service.parse_query_intent(query.question)
-
-        data = await analysis_service.get_data_by_intent(intent)
-
-        response = await llm_service.generate_response(
-            query.question,
-            data,
-            query.context or []
-        )
-
-        return JSONResponse(content=response)
-    except Exception as e:
-        logger.error(f"Error processing query: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/forecast/{days}")
-async def get_forecast(days: int = 7):
-    """获取销售预测"""
-    try:
-        forecast = await analysis_service.get_forecast(days)
-        return JSONResponse(content=forecast)
-    except Exception as e:
-        logger.error(f"Error getting forecast: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/details")
-async def get_details(request: Dict[str, Any]):
-    """获取详细数据"""
-    try:
-        detail_type = request.get("detail_type")
-        params = request.get("params", {})
-
-        details = await analysis_service.get_detail_data(detail_type, params)
-
-        return JSONResponse(content=details)
-    except Exception as e:
-        logger.error(f"Error getting details: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 # WebSocket路由 - 修复版本
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str
 ):
+    is_first_connection = session_id not in manager.active_connections
+
     """WebSocket连接处理"""
     try:
         # 接受连接
@@ -205,7 +110,8 @@ async def websocket_endpoint(
             "timestamp": datetime.now().isoformat(),
             "data": None
         }
-        await websocket.send_json(welcome_message)
+        if is_first_connection:
+            await websocket.send_json(welcome_message)
 
         # 延迟后发送日报
         await asyncio.sleep(1)
@@ -222,7 +128,8 @@ async def websocket_endpoint(
                         "content": daily_report
                     }
                 }
-                await websocket.send_json(report_message)
+                if is_first_connection:
+                    await websocket.send_json(report_message)
         except Exception as e:
             logger.warning(f"Could not send daily report: {e}")
 
@@ -254,12 +161,13 @@ async def websocket_endpoint(
 
                     # 根据意图获取数据
                     analysis_data = None
-                    if intent.get("needs_data"):
+                    if intent.get("needs_data") :
                         analysis_data = await analysis_service.get_data_by_intent(intent)
-                        exData = await sql_generator.process_question(intent.get("query"))
-                        if exData.get("success"):
-                            analysis_data["additional_data"] = exData.get("data")
-                            logging.info(exData["sql"])
+                        if intent.get("intent_type") == "data_query":
+                            exData = await sql_generator.process_question(intent.get("query"))
+                            if exData.get("success"):
+                                analysis_data["additional_data"] = exData.get("data")
+                                logging.info(exData["sql"])
 
                     # 生成回复
                     bot_response = await llm_service.generate_response(
