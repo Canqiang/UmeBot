@@ -159,8 +159,8 @@ class SQLGeneratorService:
                     "customer_created_at_pt": "客户创建时间（PT 时区）",
                     "loyalty_created_at_pt": "会员创建时间（PT 时区）",
                     "is_loyalty": "是否为会员订单",
-                    "is_new_users": "是否为新用户数组",
-                    "is_reactives": "是否为回头客数组",
+                    "is_new_users": "是否为新用户 ",
+                    "is_reactives": "是否为回头客",
                     "is_text_subscriber": "是否为短信订阅用户",
                     "is_email_subscriber": "是否为邮件订阅用户",
                     "customer_race": "客户种族",
@@ -256,13 +256,13 @@ class SQLGeneratorService:
                 ORDER BY date, hour
             """,
 
-            "new_customers": """
+            "date_new_customers": """
                 WITH first_orders AS (
                     SELECT 
                         customer_id,
                         MIN(toDate(created_at_pt)) as first_order_date
                     FROM dw.fact_order_item_variations
-                    WHERE pay_status = 'COMPLETED'
+                    WHERE pay_status = 'COMPLETED' --全局统计最早购物日期，不允许添加过滤日期
                     GROUP BY customer_id
                 )
                 SELECT 
@@ -273,6 +273,39 @@ class SQLGeneratorService:
                 GROUP BY date
                 ORDER BY date DESC
             """,
+            "new_customer_and_old_customer": """
+             with first_orders AS (
+    SELECT 
+        customer_id,
+        MIN(toDate(created_at_pt)) as first_order_date
+    FROM dw.fact_orders
+    WHERE pay_status = 'COMPLETED'
+    GROUP BY customer_id
+)
+SELECT 
+    CASE 
+        WHEN fo.first_order_date = '2025-08-06' THEN 'New User' 
+        ELSE 'Old User' 
+    END AS user_type,
+    COUNT(DISTINCT o.customer_id) AS user_count
+FROM dw.fact_orders o left join first_orders fo on o.customer_id = fo.customer_id
+WHERE toDate(o.created_at_pt) = '2025-08-06'
+GROUP BY user_type
+            """,
+            "Number_of purchasers among users registered on the same day": """
+            SELECT 
+    CASE 
+        WHEN c.customer_created_at_pt IS NULL THEN 'Old Customer' 
+        ELSE 'New Customer' 
+    END AS customer_type,
+    COUNT(DISTINCT o.customer_id) AS customer_count
+FROM dw.fact_orders o
+LEFT JOIN dw.dim_customers c ON o.customer_id = c.customer_id and toDate(c.customer_created_at_pt) = '2025-08-06'
+WHERE o.pay_status = 'COMPLETED' 
+    AND toDate(o.created_at_pt) = '2025-08-06'
+GROUP BY customer_type
+            """
+            ,
             "group_item_sales": """
                         WITH group_item_sales AS (
                                    SELECT
@@ -295,7 +328,23 @@ class SQLGeneratorService:
                                 WHERE  sales_count>1 -- 订单中包含的item数量大于1，排除非组合订单，选出多商品订单
                                 GROUP BY item_list
                                 ORDER BY group_order_count DESC
-                            """
+                            """,
+            "Purchase situation of new users":"""
+            SELECT 
+    category_name,
+    COUNT(*) as sales_count,
+    SUM(item_total_amt) as total_revenue
+FROM dw.fact_order_item_variations
+WHERE pay_status = 'COMPLETED'
+    AND customer_id IN (
+        SELECT customer_id
+        FROM dw.dim_customers
+        WHERE  toDate(customer_created_at_pt) = '2025-08-06'
+    )
+    AND toDate(created_at_pt) BETWEEN '2025-07-31' AND '2025-08-07'
+GROUP BY category_name
+ORDER BY total_revenue DESC
+            """
         }
 
     async def generate_sql_from_question(self, question: str, context: Dict[str, Any] = None) -> Tuple[
@@ -651,8 +700,6 @@ class SQLGeneratorService:
         date_filter = self._generate_date_filter(intent["time_range"], entities.get("dates"))
         # 添加额外的过滤条件
 
-
-
         prompt = f"""
               你是一个clickhouse 数据库 sql编写工具。根据问题分析需要获取的数据，并输出sql查询语句
               问题：{question}
@@ -915,11 +962,11 @@ CREATE TABLE dw.fact_order_item_variations
  ====根据问题转换的部分过滤条件=====
    时间：{date_filter}
    {
-    f"商品类目名词:'{entities.get("categories")}')" if entities.get("categories") else ""
-   }
+        f"商品类目名词:'{entities.get("categories")}')" if entities.get("categories") else ""
+        }
    {
-       f"门店名词:'{entities.get("stores")}')" if entities.get("stores") else ""
-   }
+        f"门店名词:'{entities.get("stores")}')" if entities.get("stores") else ""
+        }
  ====查询参考模板=====
  {self.query_templates}
               """
