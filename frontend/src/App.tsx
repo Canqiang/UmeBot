@@ -94,6 +94,9 @@ const MessageBubble: React.FC<{
   const isUser = message.type === 'user';
   const [showDetails, setShowDetails] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
+  const bubbleClass = `rounded-2xl px-5 py-3 ${
+    isUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
+  }`;
 
   const renderData = () => {
     if (!message.data) return null;
@@ -315,13 +318,11 @@ const MessageBubble: React.FC<{
           </div>
 
           <div className="flex-1">
-            <div className={`rounded-2xl px-5 py-3 ${
-              isUser 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {message.content}
-            </div>
+            {isUser ? (
+              <div className={bubbleClass}>{message.content}</div>
+            ) : (
+              <MarkdownMessage content={message.content} className={bubbleClass} />
+            )}
             {renderData()}
           </div>
         </div>
