@@ -272,7 +272,9 @@ const MessageBubble: React.FC<{
               </div>
             )}
           </div>
-          <ForecastChart data={forecastData} />
+          <div className="min-h-[500px]">
+            <ForecastChart data={forecastData} onRender={scrollToBottom} />
+          </div>
         </div>
       );
     }
