@@ -2,7 +2,7 @@
 UMe Bot 后端主应用
 提供聊天API、数据分析和WebSocket服务
 """
-
+import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -20,12 +20,18 @@ from app.llm_service import LLMService
 from app.analysis_service import AnalysisService
 from app.models import ChatMessage, AnalysisRequest, DataQuery
 
+from backend.app.sql_generator import SQLGeneratorService
+
 # 全局管理器
 chat_manager = ChatManager()
 llm_service = LLMService()
 analysis_service = AnalysisService()
-
-
+sql_generator = SQLGeneratorService(llm_service)
+logging.basicConfig(
+    level=logging.INFO,  # 日志级别：DEBUG < INFO < WARNING < ERROR < CRITICAL
+    format="%(asctime)s - %(levelname)s - %(message)s",  # 日志格式
+    datefmt="%Y-%m-%d %H:%M:%S"  # 时间格式
+)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
@@ -203,6 +209,10 @@ async def websocket_chat(websocket: WebSocket, session_id: str):
                 analysis_data = None
                 if intent.get("needs_data"):
                     analysis_data = await analysis_service.get_data_by_intent(intent)
+                    exData = await sql_generator.process_question(intent.get("query"))
+                    if exData.get("success"):
+                        analysis_data["exData"] = exData.get("data")
+                        logging.info(exData["sql"])
 
                 # 生成回复
                 bot_response = await llm_service.generate_response(

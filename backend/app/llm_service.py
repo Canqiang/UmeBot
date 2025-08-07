@@ -56,7 +56,8 @@ class LLMService:
             "forecast": ["预测", "预估", "未来", "趋势", "展望"],
             "comparison": ["对比", "比较", "环比", "同比", "差异"],
             "detail": ["详细", "具体", "明细", "详情", "展开"],
-            "suggestion": ["建议", "怎么办", "如何", "优化", "改进"]
+            "suggestion": ["建议", "怎么办", "如何", "优化", "改进"],
+            "sqlquery": ["SQL", "查询", "数据", "表格", "什么","多","少"]
         }
 
     async def parse_query_intent(self, query: str) -> Dict[str, Any]:
@@ -282,7 +283,9 @@ class LLMService:
             forecast = data["forecast"]
             formatted.append(f"- 未来7天总预测: ${forecast.get('total_forecast', 0):,.0f}")
             formatted.append(f"- 日均预测: ${forecast.get('avg_daily_forecast', 0):,.0f}")
-
+        if "exData" in data:
+            formatted.append("\n📈 额外数据库查询数据：")
+            formatted.append(f"- datainfo: ${data.get('exData')}")
         return "\n".join(formatted)
 
     def _format_data_for_frontend(self, data: Dict[str, Any]) -> Dict[str, Any]:

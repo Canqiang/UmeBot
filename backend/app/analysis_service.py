@@ -12,7 +12,6 @@ from app.config import settings
 
 # 导入因果分析引擎（假设已经在项目中）
 import sys
-
 sys.path.append('../')
 from app.fixed_causal_inference import UMeCausalInferenceEngine
 
@@ -257,7 +256,7 @@ class AnalysisService:
 
         elif intent_type == "comparison":
             data = await self._get_comparison_data(start_date, end_date, intent)
-
+        
         return data
 
     async def get_detail_data(self, detail_type: str, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -549,3 +548,6 @@ class AnalysisService:
     async def _get_promotion_effect_details(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """获取促销效果详情"""
         return {"promotion": params.get("promotion"), "details": "促销效果详情"}
+
+
+
