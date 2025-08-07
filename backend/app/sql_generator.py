@@ -3,7 +3,7 @@ import re
 import json
 from datetime import datetime, timedelta
 from app.config import settings
-from app.database import db_manager
+from app.database import get_db
 import pandas as pd
 
 
@@ -539,7 +539,7 @@ class SQLGeneratorService:
     async def execute_sql(self, sql: str) -> pd.DataFrame:
         """执行SQL查询"""
         try:
-            df = await db_manager.execute_query_async(sql)
+            df = await get_db().execute_query_async(sql)
             return df
         except Exception as e:
             print(f"SQL execution error: {e}")
@@ -664,7 +664,7 @@ class SQLGeneratorService:
               5. 注意订单表fact_order_item_variations是fact_orders表的明细表是根据订单每个商品进行分行，注意和fact_orders区分
               6. 模板只是举例，生成sql可以不局限于模版内容
               7. 一般情况下只统计已完成的订单需要添加 WHERE pay_status = 'COMPLETED'
-              8. 未明确要求查询深度时不要直接查询明细信息，尽量进行汇总统计查询
+              8. 未明确要求查询深度时不要直接查询明细信息，优先查询统计信息，数据汇总到问题包含的维度
               ==============clickhouse数据结构信息=======
               -- ads.customer_profile definition
 CREATE TABLE ads.customer_profile
@@ -923,8 +923,8 @@ CREATE TABLE dw.fact_order_item_variations
  ====查询参考模板=====
  {self.query_templates}
               """
-        # 替换模板中的占位符
-        response = await self.llm_service.client.chat.completions.create(
+
+        response = self.llm_service.client.chat.completions.create(
             model=self.llm_service.model,
             messages=[
                 {"role": "user", "content": prompt}

@@ -198,7 +198,6 @@ async def websocket_endpoint(
         # 创建或获取会话
         session = await chat_manager.create_or_get_session(session_id)
 
-    try:
         # 发送欢迎消息
         welcome_message = {
             "type": "bot_message",
@@ -259,7 +258,7 @@ async def websocket_endpoint(
                         analysis_data = await analysis_service.get_data_by_intent(intent)
                         exData = await sql_generator.process_question(intent.get("query"))
                         if exData.get("success"):
-                            analysis_data["exData"] = exData.get("data")
+                            analysis_data["additional_data"] = exData.get("data")
                             logging.info(exData["sql"])
 
                     # 生成回复
