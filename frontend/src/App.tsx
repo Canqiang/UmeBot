@@ -89,7 +89,8 @@ const MessageBubble: React.FC<{
   message: Message;
   onChartPointClick?: (params: any) => void;
   onMetricClick?: (metric: string) => void;
-}> = ({ message, onChartPointClick, onMetricClick }) => {
+  scrollToBottom?: () => void;
+}> = ({ message, onChartPointClick, onMetricClick, scrollToBottom }) => {
   const isUser = message.type === 'user';
   const [showDetails, setShowDetails] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
@@ -571,6 +572,7 @@ export default function App() {
               message={message}
               onChartPointClick={handleChartPointClick}
               onMetricClick={handleMetricClick}
+              scrollToBottom={scrollToBottom}
             />
           ))}
 
