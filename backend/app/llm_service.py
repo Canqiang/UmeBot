@@ -43,7 +43,7 @@ class LLMService:
             system_prompt = (
                 "你是意图识别助手。"
                 "请从用户问题中提取意图, 并从以下intent_type中选择其一: "
-                "forecast, data_query, analysis, daily_report, general。"
+                "forecast, data_query, daily_report, general。"
                 "根据需要返回entities字段, 并提供confidence。"
                 "返回JSON格式, 例如{\"intent_type\": \"data_query\", "
                 "\"entities\": {\"query_target\": \"orders\"}, \"confidence\": 0.9}"
