@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Download, Share2, Maximize2 } from 'lucide-react';
+import React from 'react';
+import { X, Download, Share2 } from 'lucide-react';
 import { TableView } from './TableView';
 import { ChartView } from './ChartView';
 import { AnalysisView } from './AnalysisView';
@@ -19,8 +19,6 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   data,
   type
 }) => {
-  const [activeTab, setActiveTab] = useState(0);
-
   if (!isOpen) return null;
 
   const renderContent = () => {
