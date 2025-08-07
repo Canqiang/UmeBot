@@ -5,6 +5,7 @@ LLM服务 - 修复意图识别，支持预测和数据查询
 
 import os
 import json
+from decimal import Decimal
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
 import re
@@ -16,9 +17,21 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+def convert_decimal_to_str(data):
+    if isinstance(data, dict):
+        return {k: convert_decimal_to_str(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_decimal_to_str(item) for item in data]
+    elif isinstance(data, Decimal):
+        return str(data)
+    else:
+        return data
+
+
+
 class LLMService:
     """LLM服务管理"""
-    
+
     def __init__(self):
         self.client = AzureOpenAI(
             api_key=settings.OPENAI_API_KEY,
@@ -158,7 +171,8 @@ class LLMService:
             return await self._generate_report_response(data)
         else:
             return await self._generate_general_response(user_message, data, history)
-    
+
+
     async def _generate_forecast_response(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """生成预测响应"""
         if not data or "error" in data:
@@ -279,7 +293,8 @@ class LLMService:
                 "display_type": "causal_analysis"
             }
         }
-    
+
+
     async def _generate_report_response(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """生成日报响应"""
         if not data:
@@ -296,7 +311,8 @@ class LLMService:
                 "display_type": "daily_report"
             }
         }
-    
+
+
     async def _generate_general_response(self, 
                                         user_message: str,
                                         data: Optional[Dict[str, Any]] = None,
@@ -334,8 +350,9 @@ class LLMService:
             
             # 添加当前消息
             current_msg = {"role": "user", "content": user_message}
+            data = convert_decimal_to_str(data)
             if data:
-                current_msg["content"] += f"\n\n相关数据：{json.dumps(data, ensure_ascii=False)[:500]}"
+                current_msg["content"] += f"\n\n相关数据：{data}"
             messages.append(current_msg)
             
             # 调用GPT
@@ -343,7 +360,7 @@ class LLMService:
                 model=self.model,
                 messages=messages,
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=2048
             )
             
             return {

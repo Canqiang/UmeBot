@@ -3,4 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="UmeBot" />
   </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="umebot" project-jdk-type="Python SDK" />
 </project>

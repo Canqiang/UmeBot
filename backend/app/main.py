@@ -2,7 +2,7 @@
 """
 UMe Bot 后端主应用 - 修复WebSocket连接问题
 """
-
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -21,6 +21,8 @@ from app.llm_service import LLMService
 from app.analysis_service import AnalysisService
 from app.models import ChatMessage, AnalysisRequest, DataQuery
 
+from backend.app.sql_generator import SQLGeneratorService
+
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,6 +31,7 @@ logger = logging.getLogger(__name__)
 chat_manager = ChatManager()
 llm_service = LLMService()
 analysis_service = AnalysisService()
+sql_generator = SQLGeneratorService(llm_service)
 
 # WebSocket连接管理器
 class ConnectionManager:
@@ -253,6 +256,10 @@ async def websocket_endpoint(
                     analysis_data = None
                     if intent.get("needs_data"):
                         analysis_data = await analysis_service.get_data_by_intent(intent)
+                        exData = await sql_generator.process_question(intent.get("query"))
+                        if exData.get("success"):
+                            analysis_data["additional_data"] = exData.get("data")
+                            logging.info(exData["sql"])
 
                     # 生成回复
                     bot_response = await llm_service.generate_response(
