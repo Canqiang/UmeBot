@@ -1,0 +1,64 @@
+.markdown-body {
+  line-height: 1.6;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.markdown-body h1 {
+  font-size: 2em;
+}
+
+.markdown-body h2 {
+  font-size: 1.5em;
+}
+
+.markdown-body h3 {
+  font-size: 1.25em;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.5em 0;
+  padding-left: 1.5rem;
+}
+
+.markdown-body li {
+  margin-top: 0.25em;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5em 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #e5e7eb; /* gray-200 */
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.markdown-body pre {
+  background-color: #f3f4f6; /* gray-100 */
+  padding: 0.75rem;
+  border-radius: 0.375rem; /* rounded-md */
+  overflow-x: auto;
+}
+
+.markdown-body code {
+  background-color: #f3f4f6; /* gray-100 */
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem; /* rounded */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+}
