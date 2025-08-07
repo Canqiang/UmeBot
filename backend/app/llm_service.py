@@ -164,7 +164,7 @@ class LLMService:
         if intent["intent_type"] == "forecast":
             return await self._generate_forecast_response(data)
         elif intent["intent_type"] == "data_query":
-            return await self._generate_query_response(data, intent)
+            return await self._generate_general_response(user_message,data, None)
         elif intent["intent_type"] == "analysis":
             return await self._generate_analysis_response(data)
         elif intent["intent_type"] == "daily_report":
@@ -222,9 +222,9 @@ class LLMService:
                 "message": "正在查询数据...",
                 "data": None
             }
-        
+
         target = intent.get("entities", {}).get("query_target", "data")
-        
+
         # 根据查询目标生成响应
         if target == "customers":
             count = data.get("customer_count", data.get("unique_customers", 0))
@@ -233,7 +233,7 @@ class LLMService:
 目前总共有 **{count:,}** 位客户。
 
 这包括所有在系统中有过购买记录的客户。如需了解更详细的客户分群信息，可以问我"分析客户分群"或"显示客户画像"。"""
-        
+
         elif target == "orders":
             count = data.get("total_orders", 0)
             message = f"""📦 **订单数据统计**
@@ -241,7 +241,7 @@ class LLMService:
 目前总共有 **{count:,}** 个订单。
 
 这是所有已完成的订单总数。需要了解更多订单相关信息，可以询问"今日订单情况"或"订单趋势分析"。"""
-        
+
         elif target == "revenue":
             amount = data.get("total_revenue", 0)
             message = f"""💰 **营收数据统计**
@@ -249,7 +249,7 @@ class LLMService:
 总营收为 **${amount:,.2f}**
 
 这是所有已完成订单的总销售额。如需了解营收趋势或详细分析，可以询问"营收趋势"或"销售分析"。"""
-        
+
         else:
             # 通用查询响应
             message = "查询结果如下："
@@ -257,7 +257,7 @@ class LLMService:
                 for key, value in data.items():
                     if key != "display_type":
                         message += f"\n• {key}: {value}"
-        
+
         return {
             "message": message,
             "data": {
