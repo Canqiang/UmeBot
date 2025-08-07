@@ -41,7 +41,10 @@ export const TableView: React.FC<TableViewProps> = ({
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   // 处理不同格式的数据
-  const { columns, rows } = useMemo(() => {
+  const { columns, rows } = useMemo<{
+    columns: TableColumn[];
+    rows: Record<string, any>[];
+  }>(() => {
     if (Array.isArray(data)) {
       // 如果是数组，自动生成列
       if (data.length > 0) {
@@ -52,14 +55,14 @@ export const TableView: React.FC<TableViewProps> = ({
             title: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
             sortable: true,
             filterable: true
-          })),
+          })) as TableColumn[],
           rows: data
         };
       }
-      return { columns: [], rows: [] };
+      return { columns: [] as TableColumn[], rows: [] };
     }
     return {
-      columns: data.columns || [],
+      columns: (data.columns || []) as TableColumn[],
       rows: data.rows || []
     };
   }, [data]);
@@ -241,7 +244,7 @@ export const TableView: React.FC<TableViewProps> = ({
                   className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                     column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''
                   }`}
-                  style={{ width: column.width }}
+                  style={{ width: column?.width }}
                   onClick={() => column.sortable && handleSort(column.key)}
                 >
                   <div className="flex items-center space-x-1">
@@ -292,10 +295,8 @@ export const TableView: React.FC<TableViewProps> = ({
                 </td>
                 {columns.map((column) => (
                   <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {column.render
-                      ? column.render(row[column.key], row)
-                      : formatValue(row[column.key], column.type)
-                    }
+                    {column.render?.(row[column.key], row) ??
+                      formatValue(row[column.key], column?.type)}
                   </td>
                 ))}
                 <td className="px-4 py-3">
