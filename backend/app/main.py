@@ -163,10 +163,11 @@ async def websocket_endpoint(
                     analysis_data = None
                     # if intent.get("needs_data"):
                     analysis_data = await analysis_service.get_data_by_intent(intent)
-                    exData = await sql_generator.process_question(intent.get("query"))
-                    if exData.get("success"):
-                        analysis_data["additional_data"] = exData.get("data")
-                        logging.info(exData["sql"])
+                    if intent.get("intent_type") == "data_query":
+                        exData = await sql_generator.process_question(intent.get("query"))
+                        if exData.get("success"):
+                            analysis_data["additional_data"] = exData.get("data")
+                            logging.info(exData["sql"])
 
                     # 生成回复
                     bot_response = await llm_service.generate_response(

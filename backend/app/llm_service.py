@@ -49,11 +49,11 @@ class LLMService:
                            'forecast', 'predict', 'estimate', 'future', 'tomorrow']
         
         # 查询相关关键词
-        query_keywords = ['查询', '查', '多少', '几个', '统计', '总共', '目前', '现在',
+        query_keywords = ['查询', '查', '多少', '几个', '统计', '总共', '目前', '现在','最','昨天',
                          'query', 'how many', 'count', 'total', 'current', 'now']
         
         # 分析相关关键词
-        analysis_keywords = ['分析', '因果', '影响', '效果', '趋势', '对比',
+        analysis_keywords = ['分析', '因果', '影响', '效果', '趋势', '对比','下降','上升',
                            'analyze', 'analysis', 'effect', 'trend', 'compare']
         
         # 日报相关关键词
