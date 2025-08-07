@@ -1,4 +1,6 @@
-exports[`MarkdownMessage renders markdown elements 1`] = `
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MarkdownMessage > renders markdown elements 1`] = `
 <h1
   class="text-2xl font-bold mt-6 mb-4 text-gray-900"
 >
