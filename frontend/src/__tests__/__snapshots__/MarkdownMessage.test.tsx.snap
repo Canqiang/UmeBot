@@ -1,0 +1,7 @@
+exports[`MarkdownMessage renders markdown elements 1`] = `
+<h1
+  class="text-2xl font-bold mt-6 mb-4 text-gray-900"
+>
+  Heading 1
+</h1>
+`;
