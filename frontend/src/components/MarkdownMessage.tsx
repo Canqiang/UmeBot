@@ -6,8 +6,6 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import { CheckCircle, AlertCircle, Info, AlertTriangle, Copy, Check } from 'lucide-react';
-import 'katex/dist/katex.min.css';
-import 'highlight.js/styles/github.css';
 
 interface MarkdownMessageProps {
   content: string;
