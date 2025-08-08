@@ -1,7 +1,7 @@
 // frontend/src/components/ChartView.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import * as echarts from 'echarts';
-import { BarChart3, Download, Maximize2, Filter } from 'lucide-react';
+import { Download, Maximize2, Filter } from 'lucide-react';
 
 interface ChartViewProps {
   data: {
