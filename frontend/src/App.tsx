@@ -88,31 +88,11 @@ const MessageBubble: React.FC<{
   message: Message;
   onChartPointClick?: (params: any) => void;
   onMetricClick?: (metric: string) => void;
-  isLastMessage: boolean;
-}> = ({ message, onChartPointClick, onMetricClick, isLastMessage }) => {
+  scrollToBottom?: () => void;
+}> = ({ message, onChartPointClick, onMetricClick, scrollToBottom }) => {
   const isUser = message.type === 'user';
   const [showDetails, setShowDetails] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
-  const [isContentReady, setIsContentReady] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const bubbleClass = `rounded-2xl px-5 py-3 ${
-    isUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
-  }`;
-
-  // 当内容准备好后滚动
-  useEffect(() => {
-    if (isContentReady && isLastMessage && contentRef.current) {
-      // 使用 requestAnimationFrame 确保 DOM 更新完成
-      requestAnimationFrame(() => {
-        contentRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'end',
-          inline: 'nearest'
-        });
-      });
-    }
-  }, [isContentReady, isLastMessage]);
 
   const renderData = () => {
     if (!message.data) return null;
@@ -120,83 +100,97 @@ const MessageBubble: React.FC<{
     const { type, content, display_type } = message.data;
     const displayType = display_type || type;
 
-    // 日报展示
+    // 日报展示 - 在气泡内
     if (displayType === 'daily_report') {
       const report = content as DailyReport;
       return (
-        <div className="mt-4 space-y-4" ref={contentRef}>
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="font-semibold text-lg text-gray-800">📊 数据概览</h4>
-              <span className="text-sm text-gray-500">
-                {format(new Date(report.date), 'yyyy年MM月dd日', { locale: zhCN })}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {report.highlights.map((highlight, idx) => (
-                <div key={idx} className="flex items-start">
-                  <span className="text-blue-500 mr-2">•</span>
-                  <span className="text-sm text-gray-700">{highlight}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {report.insights && report.insights.length > 0 && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5">
-              <h4 className="font-semibold text-lg text-gray-800 mb-3">💡 关键洞察</h4>
-              <ul className="space-y-2">
-                {report.insights.map((insight, idx) => (
-                  <li key={idx} className="flex items-start">
-                    <span className="text-purple-500 mr-2">→</span>
-                    <span className="text-sm text-gray-700">{insight}</span>
-                  </li>
+        <>
+          <div className="mt-4 space-y-4">
+            <div className="bg-white/50 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-lg text-gray-800">📊 数据概览</h4>
+                <span className="text-sm text-gray-500">
+                  {format(new Date(report.date), 'yyyy年MM月dd日', { locale: zhCN })}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {report.highlights.map((highlight, idx) => (
+                  <div key={idx} className="flex items-start">
+                    <span className="text-blue-500 mr-2">•</span>
+                    <span className="text-sm text-gray-700">{highlight}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
-          )}
 
-          {report.metrics && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-              <MetricCard
-                title="总营收"
-                value={`$${(report.metrics.total_revenue ?? 0).toLocaleString()}`}
-                change={report.trends?.total_revenue}
-                icon={<DollarSign className="w-5 h-5 text-blue-500" />}
-                onClick={() => onMetricClick?.('revenue')}
-              />
-              <MetricCard
-                title="订单数"
-                value={(report.metrics.total_orders ?? 0).toLocaleString()}
-                change={report.trends?.order_count}
-                icon={<Package className="w-5 h-5 text-green-500" />}
-                onClick={() => onMetricClick?.('orders')}
-              />
-              <MetricCard
-                title="客户数"
-                value={(report.metrics.unique_customers ?? 0).toLocaleString()}
-                change={report.trends?.unique_customers}
-                icon={<Users className="w-5 h-5 text-purple-500" />}
-                onClick={() => onMetricClick?.('customers')}
-              />
-              <MetricCard
-                title="客单价"
-                value={`$${(report.metrics.avg_order_value ?? 0).toFixed(2)}`}
-                change={report.trends?.avg_order_value}
-                icon={<DollarSign className="w-5 h-5 text-indigo-500" />}
-                onClick={() => onMetricClick?.('aov')}
-              />
-            </div>
-          )}
-        </div>
+            {report.insights && report.insights.length > 0 && (
+              <div className="bg-white/50 rounded-xl p-5">
+                <h4 className="font-semibold text-lg text-gray-800 mb-3">💡 关键洞察</h4>
+                <ul className="space-y-2">
+                  {report.insights.map((insight, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="text-purple-500 mr-2">→</span>
+                      <span className="text-sm text-gray-700">{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {report.metrics && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <MetricCard
+                  title="总营收"
+                  value={`$${(report.metrics.total_revenue ?? 0).toLocaleString()}`}
+                  change={report.trends?.total_revenue}
+                  icon={<DollarSign className="w-5 h-5 text-blue-500" />}
+                  onClick={() => onMetricClick?.('revenue')}
+                />
+                <MetricCard
+                  title="订单数"
+                  value={(report.metrics.total_orders ?? 0).toLocaleString()}
+                  change={report.trends?.order_count}
+                  icon={<Package className="w-5 h-5 text-green-500" />}
+                  onClick={() => onMetricClick?.('orders')}
+                />
+                <MetricCard
+                  title="客户数"
+                  value={(report.metrics.unique_customers ?? 0).toLocaleString()}
+                  change={report.trends?.unique_customers}
+                  icon={<Users className="w-5 h-5 text-purple-500" />}
+                  onClick={() => onMetricClick?.('customers')}
+                />
+                <MetricCard
+                  title="商品数"
+                  value={(report.metrics.item_count ?? 0).toLocaleString()}
+                  icon={<ShoppingBag className="w-5 h-5 text-orange-500" />}
+                  onClick={() => onMetricClick?.('items')}
+                />
+                <MetricCard
+                  title="新用户"
+                  value={(report.metrics.new_users ?? 0).toLocaleString()}
+                  icon={<UserPlus className="w-5 h-5 text-pink-500" />}
+                  onClick={() => onMetricClick?.('new_users')}
+                />
+                <MetricCard
+                  title="客单价"
+                  value={`$${(report.metrics.avg_order_value ?? 0).toFixed(2)}`}
+                  change={report.trends?.avg_order_value}
+                  icon={<DollarSign className="w-5 h-5 text-indigo-500" />}
+                  onClick={() => onMetricClick?.('aov')}
+                />
+              </div>
+            )}
+          </div>
+        </>
       );
     }
 
-    // 指标卡片展示
+    // 指标卡片展示 - 在气泡内
     if (displayType === 'metrics_cards') {
       const metrics = content.metrics || content;
       return (
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4" ref={contentRef}>
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
           <MetricCard
             title="总营收"
             value={`$${(metrics.total_revenue ?? 0).toLocaleString()}`}
@@ -240,51 +234,55 @@ const MessageBubble: React.FC<{
       );
     }
 
-    // 图表展示
+    // 图表展示 - 在气泡内
     if (displayType === 'chart') {
       const chartData = content.chart || content;
       return (
-        <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5" ref={contentRef}>
+        <div className="mt-4 bg-white/50 rounded-xl p-5">
           <ChartView data={chartData} onPointClick={onChartPointClick} />
         </div>
       );
     }
 
-    // 预测展示 - 优化滚动
+    // 预测展示 - 完全在气泡内
     if (displayType === 'forecast') {
       const forecastData = content.chart_data || content.chart || content;
 
       return (
-        <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5" ref={contentRef}>
+        <div className="mt-4 bg-white/50 rounded-xl p-5">
           <div className="mb-4">
             <h4 className="font-semibold text-lg text-gray-800">📈 销售预测</h4>
             {content.forecast && (
               <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500">预测总额</span>
-                  <div className="font-semibold">${content.forecast.total_forecast?.toLocaleString()}</div>
+                  <span className="text-gray-600">预测总额</span>
+                  <div className="font-semibold text-gray-800">${content.forecast.total_forecast?.toLocaleString()}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">日均预测</span>
-                  <div className="font-semibold">${content.forecast.avg_daily_forecast?.toFixed(2)}</div>
+                  <span className="text-gray-600">日均预测</span>
+                  <div className="font-semibold text-gray-800">${content.forecast.avg_daily_forecast?.toFixed(2)}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">预测天数</span>
-                  <div className="font-semibold">{content.forecast.forecast_days}天</div>
+                  <span className="text-gray-600">预测天数</span>
+                  <div className="font-semibold text-gray-800">{content.forecast.forecast_days}天</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">预测方法</span>
-                  <div className="font-semibold">{content.method || '移动平均'}</div>
+                  <span className="text-gray-600">预测方法</span>
+                  <div className="font-semibold text-gray-800">{content.method || '移动平均'}</div>
                 </div>
               </div>
             )}
           </div>
-          <div className="w-full">
+          {/* 图表容器 - 固定高度 */}
+          <div className="w-full" style={{ height: '350px' }}>
             <ForecastChart
               data={forecastData}
               onRender={() => {
-                // 标记内容已准备好
-                setIsContentReady(true);
+                setTimeout(() => {
+                  if (scrollToBottom) {
+                    scrollToBottom();
+                  }
+                }, 100);
               }}
             />
           </div>
@@ -292,10 +290,10 @@ const MessageBubble: React.FC<{
       );
     }
 
-    // 因果分析展示
+    // 因果分析展示 - 在气泡内
     if (displayType === 'causal_analysis') {
       return (
-        <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5" ref={contentRef}>
+        <div className="mt-4 bg-white/50 rounded-xl p-5">
           <h4 className="font-semibold text-lg text-gray-800 mb-3">🎯 因果分析结果</h4>
           <div className="space-y-2 text-sm text-gray-700">
             <p>分析已完成，发现以下关键因素对销售的影响：</p>
@@ -318,35 +316,46 @@ const MessageBubble: React.FC<{
       );
     }
 
-    // 设置内容准备完成
-    useEffect(() => {
-      setIsContentReady(true);
-    }, []);
-
     return null;
   };
 
+  // 用户消息样式
+  if (isUser) {
+    return (
+      <div className="flex justify-end mb-6">
+        <div className="flex items-start max-w-[70%] flex-row-reverse">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center ml-3">
+            <User className="w-5 h-5 text-white" />
+          </div>
+          <div className="bg-blue-500 text-white rounded-2xl px-5 py-3">
+            {message.content}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 机器人消息样式 - 所有内容都在气泡内
   return (
     <>
-      <div className={`message-container flex ${isUser ? 'justify-end' : 'justify-start'} mb-6`}>
-        <div className={`flex items-start max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-          <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-            isUser ? 'bg-blue-500 ml-3' : 'bg-gray-700 mr-3'
-          }`}>
-            {isUser ? <User className="w-5 h-5 text-white" /> : <Bot className="w-5 h-5 text-white" />}
+      <div className="flex justify-start mb-6">
+        <div className="flex items-start max-w-[85%]">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
+            <Bot className="w-5 h-5 text-white" />
           </div>
 
-          <div className="flex-1">
-            {isUser ? (
-              <div className={bubbleClass}>{message.content}</div>
-            ) : (
-              <MarkdownMessage content={message.content} className={bubbleClass} />
-            )}
+          {/* 消息气泡 - 包含文字和数据 */}
+          <div className="bg-gray-100 rounded-2xl px-5 py-3 flex-1">
+            {/* 文字内容 */}
+            <MarkdownMessage content={message.content} />
+
+            {/* 数据内容 - 在同一个气泡内 */}
             {renderData()}
           </div>
         </div>
       </div>
 
+      {/* 详情弹窗 */}
       {showDetails && detailData && (
         <DetailModal
           isOpen={showDetails}
@@ -360,7 +369,7 @@ const MessageBubble: React.FC<{
   );
 };
 
-// Main App Component
+// Main App Component - 使用固定布局防止溢出
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -369,26 +378,18 @@ export default function App() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const hasConnected = useRef(false);
 
-  // 优化的滚动函数 - 只滚动消息容器，不影响整个页面
-  const scrollToBottom = useCallback(() => {
-    if (messagesContainerRef.current) {
-      const container = messagesContainerRef.current;
-      // 使用 scrollTop 而不是 scrollIntoView，避免页面滚动
-      container.scrollTop = container.scrollHeight;
-    }
-  }, []);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
-  // 监听消息变化，自动滚动到底部
   useEffect(() => {
-    // 延迟执行以确保 DOM 更新完成
-    const timer = setTimeout(scrollToBottom, 100);
-    return () => clearTimeout(timer);
-  }, [messages, scrollToBottom]);
+    scrollToBottom();
+  }, [messages]);
 
   // WebSocket连接
   const connectWebSocket = useCallback(() => {
@@ -486,7 +487,9 @@ export default function App() {
 
   const handleQuickAction = (query: string) => {
     setInputValue(query);
-    sendMessage();
+    setTimeout(() => {
+      sendMessage();
+    }, 10);
   };
 
   const handleChartPointClick = (params: any) => {
@@ -511,14 +514,15 @@ export default function App() {
     const query = queries[metric];
     if (query) {
       setInputValue(query);
-      sendMessage();
+      setTimeout(() => sendMessage(), 10);
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Header */}
-      <div className="bg-white border-b shadow-sm">
+    // 使用 fixed 定位防止页面溢出
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-gray-50 to-blue-50">
+      {/* Header - 固定高度 */}
+      <header className="flex-shrink-0 bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -532,14 +536,10 @@ export default function App() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Messages Container - 使用固定高度和内部滚动 */}
-      <div
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-6"
-        style={{ scrollBehavior: 'smooth' }}
-      >
+      {/* Messages Container - 可滚动区域 */}
+      <main className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-5xl mx-auto">
           {messages.length === 0 ? (
             <div className="text-center py-12">
@@ -563,19 +563,20 @@ export default function App() {
             </div>
           ) : (
             <>
-              {messages.map((message, index) => (
+              {messages.map((message) => (
                 <MessageBubble
                   key={message.id}
                   message={message}
                   onChartPointClick={handleChartPointClick}
                   onMetricClick={handleMetricClick}
-                  isLastMessage={index === messages.length - 1}
+                  scrollToBottom={scrollToBottom}
                 />
               ))}
 
+              {/* Loading indicator */}
               {isLoading && (
                 <div className="flex justify-start mb-6">
-                  <div className="flex items-start max-w-[80%]">
+                  <div className="flex items-start max-w-[85%]">
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
                       <Bot className="w-5 h-5 text-white" />
                     </div>
@@ -588,13 +589,16 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {/* 滚动锚点 */}
+              <div ref={messagesEndRef} />
             </>
           )}
         </div>
-      </div>
+      </main>
 
-      {/* Input Area */}
-      <div className="bg-white border-t shadow-lg">
+      {/* Input Area - 固定在底部 */}
+      <footer className="flex-shrink-0 bg-white border-t shadow-lg">
         <div className="max-w-5xl mx-auto px-4 py-4">
           {connectionError && (
             <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
@@ -626,7 +630,7 @@ export default function App() {
             </button>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
