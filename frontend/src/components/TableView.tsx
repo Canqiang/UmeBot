@@ -1,6 +1,6 @@
 // frontend/src/components/TableView.tsx
 import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, Download, Eye } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Download, Eye } from 'lucide-react';
 
 interface TableColumn {
   key: string;
