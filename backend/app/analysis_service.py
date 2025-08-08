@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from functools import lru_cache
 import logging
-
+from app.utils import convert_to_json_serializable
 from app.config import settings
 from app.database import get_db
 from app.fixed_causal_inference import UMeCausalInferenceEngine
@@ -271,6 +271,7 @@ class AnalysisService:
 
             logger.info(f"Forecast generated: {days} days, total: ${result['forecast']['total_forecast']:,.2f}")
 
+            result = convert_to_json_serializable(result)
             self._save_to_cache(cache_key, result)
             return result
 

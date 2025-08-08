@@ -89,7 +89,8 @@ const MessageBubble: React.FC<{
   message: Message;
   onChartPointClick?: (params: any) => void;
   onMetricClick?: (metric: string) => void;
-}> = ({ message, onChartPointClick, onMetricClick }) => {
+  scrollToBottom?: () => void;  // 确保这个 prop 被定义
+}> = ({ message, onChartPointClick, onMetricClick, scrollToBottom }) => {
   const isUser = message.type === 'user';
   const [showDetails, setShowDetails] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
@@ -247,12 +248,19 @@ const MessageBubble: React.FC<{
     // 预测展示
     if (displayType === 'forecast') {
       const forecastData = content.chart_data || content.chart || content;
+
+      // const handleForecastRender = scrollToBottom ? () => {
+      //   if (scrollToBottom) {
+      //     scrollToBottom();
+      //   }
+      // } : undefined;
+
       return (
-        <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-          <div className="mb-4">
-            <h4 className="font-semibold text-lg text-gray-800">📈 销售预测</h4>
-            {content.forecast && (
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+         <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+      <div className="mb-4">
+        <h4 className="font-semibold text-lg text-gray-800">📈 销售预测</h4>
+        {content.forecast && (
+          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">预测总额</span>
                   <div className="font-semibold">${content.forecast.total_forecast?.toLocaleString()}</div>
@@ -272,12 +280,22 @@ const MessageBubble: React.FC<{
               </div>
             )}
           </div>
-          <div className="min-h-[500px]">
-            <ForecastChart data={forecastData} onRender={scrollToBottom} />
-          </div>
-        </div>
-      );
-    }
+          <div className="w-full">
+        <ForecastChart
+          data={forecastData}
+          onRender={() => {
+            // 图表完全渲染后再滚动
+            setTimeout(() => {
+              if (scrollToBottom) {
+                scrollToBottom();
+              }
+            }, 100);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
     // 因果分析展示
     if (displayType === 'causal_analysis') {
