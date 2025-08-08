@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, AlertCircle, CheckCircle, Target, Zap } from 'lucide-react';
+import { TrendingUp, CheckCircle, Target, Zap } from 'lucide-react';
 
 interface AnalysisViewProps {
   data: any;
@@ -162,8 +162,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({ data }) => {
       {/* 警告信息 */}
       {data.warnings && data.warnings.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-          <div className="flex items-center mb-2">
-            <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+          <div className="mb-2">
             <h4 className="font-semibold text-yellow-800">注意事项</h4>
           </div>
           <ul className="space-y-1 text-sm text-yellow-700">
