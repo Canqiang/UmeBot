@@ -273,10 +273,11 @@ const MessageBubble: React.FC<{
               </div>
             )}
           </div>
-          {/* 图表容器 - 固定高度 */}
-          <div className="w-full" style={{ height: '350px' }}>
+          {/* 图表容器 */}
+          <div className="w-full">
             <ForecastChart
               data={forecastData}
+              height="350px"
               onRender={() => {
                 setTimeout(() => {
                   if (scrollToBottom) {

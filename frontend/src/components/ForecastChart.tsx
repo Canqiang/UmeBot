@@ -17,9 +17,10 @@ interface ForecastChartProps {
   data?: ForecastPoint[] | any;
   onPointClick?: (params: any) => void;
   onRender?: () => void;
+  height?: string;
 }
 
-export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick, onRender }) => {
+export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick, onRender, height = '500px' }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartInstance, setChartInstance] = useState<echarts.ECharts | null>(null);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -48,6 +49,12 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick
       updateChart();
     }
   }, [chartInstance, data, showConfidence, dateRange, onRender]);
+
+  useEffect(() => {
+    if (chartInstance) {
+      chartInstance.resize();
+    }
+  }, [chartInstance, height]);
 
   const updateChart = () => {
     if (!chartInstance || !data) return;
@@ -432,7 +439,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({ data, onPointClick
 
       {/* 图表容器 */}
       <div className="relative">
-        <div ref={chartRef} style={{ width: '100%', height: '500px' }} />
+        <div ref={chartRef} style={{ width: '100%', height }} />
         
         {/* 悬停信息卡片 */}
         {hoveredPoint && (
