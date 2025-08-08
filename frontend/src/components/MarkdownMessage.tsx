@@ -84,7 +84,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
         ),
 
         // 代码块
-        code: ({ inline, className, children, ...props }) => {
+        code: ({ inline, className, children, ...props }: {inline?: boolean; className?: string; children: React.ReactNode}) => {
           const match = /language-(\w+)/.exec(className || '');
           const codeString = String(children).replace(/\n$/, '');
           const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
