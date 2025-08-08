@@ -11,6 +11,7 @@ import { DetailModal } from './components/DetailModal';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { MarkdownMessage } from './components/MarkdownMessage';
+
 // Types
 interface Message {
   id: string;
@@ -41,8 +42,6 @@ interface DailyReport {
   insights: string[];
   metrics?: Metrics;
 }
-
-// WebSocket connection will be managed within the App component
 
 // 快速操作按钮
 const quickActions = [
@@ -89,14 +88,31 @@ const MessageBubble: React.FC<{
   message: Message;
   onChartPointClick?: (params: any) => void;
   onMetricClick?: (metric: string) => void;
-  scrollToBottom?: () => void;  // 确保这个 prop 被定义
-}> = ({ message, onChartPointClick, onMetricClick, scrollToBottom }) => {
+  isLastMessage: boolean;
+}> = ({ message, onChartPointClick, onMetricClick, isLastMessage }) => {
   const isUser = message.type === 'user';
   const [showDetails, setShowDetails] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
+  const [isContentReady, setIsContentReady] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const bubbleClass = `rounded-2xl px-5 py-3 ${
     isUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
   }`;
+
+  // 当内容准备好后滚动
+  useEffect(() => {
+    if (isContentReady && isLastMessage && contentRef.current) {
+      // 使用 requestAnimationFrame 确保 DOM 更新完成
+      requestAnimationFrame(() => {
+        contentRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'end',
+          inline: 'nearest'
+        });
+      });
+    }
+  }, [isContentReady, isLastMessage]);
 
   const renderData = () => {
     if (!message.data) return null;
@@ -108,7 +124,7 @@ const MessageBubble: React.FC<{
     if (displayType === 'daily_report') {
       const report = content as DailyReport;
       return (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-4" ref={contentRef}>
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-semibold text-lg text-gray-800">📊 数据概览</h4>
@@ -164,20 +180,9 @@ const MessageBubble: React.FC<{
                 onClick={() => onMetricClick?.('customers')}
               />
               <MetricCard
-                title="商品数"
-                value={(report.metrics.item_count ?? 0).toLocaleString()}
-                icon={<ShoppingBag className="w-5 h-5 text-orange-500" />}
-                onClick={() => onMetricClick?.('items')}
-              />
-              <MetricCard
-                title="新用户"
-                value={(report.metrics.new_users ?? 0).toLocaleString()}
-                icon={<UserPlus className="w-5 h-5 text-pink-500" />}
-                onClick={() => onMetricClick?.('new_users')}
-              />
-              <MetricCard
                 title="客单价"
                 value={`$${(report.metrics.avg_order_value ?? 0).toFixed(2)}`}
+                change={report.trends?.avg_order_value}
                 icon={<DollarSign className="w-5 h-5 text-indigo-500" />}
                 onClick={() => onMetricClick?.('aov')}
               />
@@ -189,9 +194,9 @@ const MessageBubble: React.FC<{
 
     // 指标卡片展示
     if (displayType === 'metrics_cards') {
-      const metrics = content.metrics as Metrics;
+      const metrics = content.metrics || content;
       return (
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4" ref={contentRef}>
           <MetricCard
             title="总营收"
             value={`$${(metrics.total_revenue ?? 0).toLocaleString()}`}
@@ -239,28 +244,22 @@ const MessageBubble: React.FC<{
     if (displayType === 'chart') {
       const chartData = content.chart || content;
       return (
-        <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5" ref={contentRef}>
           <ChartView data={chartData} onPointClick={onChartPointClick} />
         </div>
       );
     }
 
-    // 预测展示
+    // 预测展示 - 优化滚动
     if (displayType === 'forecast') {
       const forecastData = content.chart_data || content.chart || content;
 
-      // const handleForecastRender = scrollToBottom ? () => {
-      //   if (scrollToBottom) {
-      //     scrollToBottom();
-      //   }
-      // } : undefined;
-
       return (
-         <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-      <div className="mb-4">
-        <h4 className="font-semibold text-lg text-gray-800">📈 销售预测</h4>
-        {content.forecast && (
-          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="mt-4 bg-white rounded-xl shadow-sm border border-gray-100 p-5" ref={contentRef}>
+          <div className="mb-4">
+            <h4 className="font-semibold text-lg text-gray-800">📈 销售预测</h4>
+            {content.forecast && (
+              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">预测总额</span>
                   <div className="font-semibold">${content.forecast.total_forecast?.toLocaleString()}</div>
@@ -281,26 +280,22 @@ const MessageBubble: React.FC<{
             )}
           </div>
           <div className="w-full">
-        <ForecastChart
-          data={forecastData}
-          onRender={() => {
-            // 图表完全渲染后再滚动
-            setTimeout(() => {
-              if (scrollToBottom) {
-                scrollToBottom();
-              }
-            }, 100);
-          }}
-        />
-      </div>
-    </div>
-  );
-}
+            <ForecastChart
+              data={forecastData}
+              onRender={() => {
+                // 标记内容已准备好
+                setIsContentReady(true);
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
 
     // 因果分析展示
     if (displayType === 'causal_analysis') {
       return (
-        <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5">
+        <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5" ref={contentRef}>
           <h4 className="font-semibold text-lg text-gray-800 mb-3">🎯 因果分析结果</h4>
           <div className="space-y-2 text-sm text-gray-700">
             <p>分析已完成，发现以下关键因素对销售的影响：</p>
@@ -322,6 +317,11 @@ const MessageBubble: React.FC<{
         </div>
       );
     }
+
+    // 设置内容准备完成
+    useEffect(() => {
+      setIsContentReady(true);
+    }, []);
 
     return null;
   };
@@ -369,18 +369,26 @@ export default function App() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const hasConnected = useRef(false);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // 优化的滚动函数 - 只滚动消息容器，不影响整个页面
+  const scrollToBottom = useCallback(() => {
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      // 使用 scrollTop 而不是 scrollIntoView，避免页面滚动
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
 
+  // 监听消息变化，自动滚动到底部
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // 延迟执行以确保 DOM 更新完成
+    const timer = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timer);
+  }, [messages, scrollToBottom]);
 
   // WebSocket连接
   const connectWebSocket = useCallback(() => {
@@ -450,7 +458,6 @@ export default function App() {
       setConnectionError(data.message);
       setIsLoading(false);
     } else if (data.type === 'data_details') {
-      // 处理详细数据
       console.log('Received details:', data.data);
     }
   };
@@ -474,156 +481,148 @@ export default function App() {
     }));
 
     setInputValue('');
+    inputRef.current?.focus();
   };
 
   const handleQuickAction = (query: string) => {
     setInputValue(query);
-    setTimeout(() => {
-      sendMessage();
-    }, 100);
+    sendMessage();
   };
 
   const handleChartPointClick = (params: any) => {
-    console.log('Chart point clicked:', params);
-    // 可以发送请求获取该数据点的详细信息
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
-        type: 'get_details',
-        detail_type: 'data_point',
-        params: {
-          date: params.name,
-          value: params.value
-        }
+        type: 'chart_interaction',
+        data: params
       }));
     }
   };
 
   const handleMetricClick = (metric: string) => {
-    console.log('Metric clicked:', metric);
-    // 可以发送请求获取该指标的详细信息
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'get_details',
-        detail_type: 'metric_detail',
-        params: {
-          metric_name: metric
-        }
-      }));
+    const queries: Record<string, string> = {
+      revenue: '显示收入详情',
+      orders: '显示订单详情',
+      customers: '显示客户详情',
+      items: '显示商品详情',
+      new_users: '显示新用户详情',
+      aov: '分析客单价趋势'
+    };
+
+    const query = queries[metric];
+    if (query) {
+      setInputValue(query);
+      sendMessage();
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4">
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
-                <Bot className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">UMe 智能数据助手</h1>
-                <p className="text-xs text-gray-500">实时数据分析 · 智能预测 · 业务洞察</p>
-              </div>
-            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              UMe 数据助手
+            </h1>
             <div className="flex items-center space-x-4">
-              <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                isConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}>
-                <div className={`w-2 h-2 rounded-full mr-2 ${
-                  isConnected ? 'bg-green-500' : 'bg-red-500'
-                }`} />
-                {isConnected ? '已连接' : connectionError ? '连接失败' : '连接中...'}
+              <div className={`flex items-center space-x-2 ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-600' : 'bg-red-600'} animate-pulse`} />
+                <span className="text-sm">{isConnected ? '已连接' : '未连接'}</span>
               </div>
-              <span className="text-sm text-gray-500">
-                {format(new Date(), 'HH:mm', { locale: zhCN })}
-              </span>
             </div>
           </div>
-        </div>
-      </header>
-
-      {/* Connection Error */}
-      {connectionError && (
-        <div className="bg-red-50 border-b border-red-200 px-6 py-3">
-          <div className="flex items-center">
-            <span className="text-sm text-red-700">{connectionError}</span>
-            <button
-              onClick={connectWebSocket}
-              className="ml-auto text-sm text-red-600 hover:text-red-700 font-medium"
-            >
-              重新连接
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Actions */}
-      {messages.length === 0 && (
-        <div className="bg-white border-b px-6 py-5">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-sm font-medium text-gray-600 mb-4">快速开始</p>
-            <div className="flex flex-wrap gap-3">
-              {quickActions.map((action, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleQuickAction(action.query)}
-                  className="flex items-center px-4 py-2.5 bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 rounded-xl text-sm font-medium transition-all group"
-                >
-                  <span className="mr-2 group-hover:scale-110 transition-transform">{action.icon}</span>
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="max-w-5xl mx-auto">
-          {messages.map(message => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              onChartPointClick={handleChartPointClick}
-              onMetricClick={handleMetricClick}
-            />
-          ))}
-
-          {isLoading && (
-            <div className="flex items-center space-x-3 text-gray-500 mb-4">
-              <Loader className="w-5 h-5 animate-spin" />
-              <span className="text-sm">正在分析数据...</span>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input */}
-      <div className="bg-white border-t px-6 py-4">
+      {/* Messages Container - 使用固定高度和内部滚动 */}
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto px-4 py-6"
+        style={{ scrollBehavior: 'smooth' }}
+      >
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center space-x-4">
+          {messages.length === 0 ? (
+            <div className="text-center py-12">
+              <Bot className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-gray-700 mb-2">欢迎使用 UMe 数据助手</h2>
+              <p className="text-gray-500 mb-8">我可以帮您分析销售数据、预测趋势、寻找业务洞察</p>
+
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 max-w-3xl mx-auto">
+                {quickActions.map((action, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickAction(action.query)}
+                    className="flex items-center justify-center space-x-2 px-4 py-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 hover:border-blue-200"
+                  >
+                    {action.icon}
+                    <span className="text-sm font-medium text-gray-700">{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((message, index) => (
+                <MessageBubble
+                  key={message.id}
+                  message={message}
+                  onChartPointClick={handleChartPointClick}
+                  onMetricClick={handleMetricClick}
+                  isLastMessage={index === messages.length - 1}
+                />
+              ))}
+
+              {isLoading && (
+                <div className="flex justify-start mb-6">
+                  <div className="flex items-start max-w-[80%]">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="bg-gray-100 rounded-2xl px-5 py-3">
+                      <div className="flex items-center space-x-2">
+                        <Loader className="w-4 h-4 animate-spin text-gray-600" />
+                        <span className="text-gray-600">正在思考...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Input Area */}
+      <div className="bg-white border-t shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          {connectionError && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+              {connectionError}
+            </div>
+          )}
+
+          <div className="flex items-center space-x-3">
             <input
               ref={inputRef}
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="输入你的问题，例如：分析本周销售趋势..."
-              className="flex-1 px-5 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-              disabled={!isConnected}
+              placeholder="输入您的问题..."
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={!isConnected || isLoading}
             />
             <button
               onClick={sendMessage}
-              disabled={!isConnected || !inputValue.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium flex items-center space-x-2"
+              disabled={!isConnected || isLoading || !inputValue.trim()}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                isConnected && !isLoading && inputValue.trim()
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-md hover:shadow-lg'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
             >
               <Send className="w-5 h-5" />
-              <span>发送</span>
             </button>
           </div>
         </div>
