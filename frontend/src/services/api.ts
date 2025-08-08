@@ -1,6 +1,6 @@
 // ============== src/services/api.ts ==============
 import axios, { AxiosInstance } from 'axios';
-import type { ForecastData } from '../types';
+import type { ForecastData, AnalysisResult } from '../types';
 
 // API配置
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
@@ -57,12 +57,14 @@ export const api = {
   },
 
   // 运行分析
-  runAnalysis: async (params: {
-    start_date: string;
-    end_date: string;
-    analysis_type?: string;
-  }) => {
-    return apiClient.post('/api/analyze', params);
+  runAnalysis: async (
+    params: {
+      start_date: string;
+      end_date: string;
+      analysis_type?: string;
+    }
+  ): Promise<AnalysisResult> => {
+    return apiClient.post<AnalysisResult>('/api/analyze', params);
   },
 
   // 查询数据
